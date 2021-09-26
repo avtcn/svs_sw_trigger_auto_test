@@ -245,7 +245,8 @@ CMiniSampleDisplayDlg::CMiniSampleDisplayDlg(CWnd* pParent /*=NULL*/)
 
 CMiniSampleDisplayDlg::~CMiniSampleDisplayDlg()
 {
-    KillTimer(1);
+    if (m_bAutoTrigger)
+        KillTimer(1);
 }
 
 void CMiniSampleDisplayDlg::DoDataExchange(CDataExchange* pDX)
