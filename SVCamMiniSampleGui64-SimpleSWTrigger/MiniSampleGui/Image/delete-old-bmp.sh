@@ -6,5 +6,5 @@ do
 	# Remove bmp files old than 1 minute
 	find . -mmin 1 -name "*.bmp" -delete
 
-	sleep 10s 
+	sleep 1m
 done
