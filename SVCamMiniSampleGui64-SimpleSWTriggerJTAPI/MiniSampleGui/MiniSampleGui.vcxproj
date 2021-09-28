@@ -22,7 +22,7 @@
     <ProjectGuid>{29D12C86-659E-4C61-911D-F7B2ECDAD6A3}</ProjectGuid>
     <RootNamespace>MiniSampleGui</RootNamespace>
     <Keyword>MFCProj</Keyword>
-    <ProjectName>SVCamMiniSampleGui</ProjectName>
+    <ProjectName>SVCamMiniSampleGuiJTAPI</ProjectName>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
