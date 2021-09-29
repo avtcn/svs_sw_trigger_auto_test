@@ -65,6 +65,8 @@ unsigned long __stdcall GrabSVSCameraPhotosThreadfunction(void* context)
 SVSCamDLL::SVSCamDLL()
 {
     sdk_init_done = false;
+
+    cam_container = new CameraContainer();
     currentCam = NULL; 
 
     isStoping = false;
@@ -163,7 +165,8 @@ int SVSCamDLL::Open()
     SVFeatureSetValueFloat(currentCam->hRemoteDev, hFeature, 30000);    // exposure time 30ms
 
     // Start capturing thread
-    currentCam->StreamAcquisitionStart(4);
+    ret = currentCam->StreamAcquisitionStart(4);
+    ASSERT(ret == SV_ERROR_SUCCESS);
 
     // OnInitDialog() ==>  DisplayThreadfunction() ==> svCam->startAcqThread() 
 
@@ -179,7 +182,6 @@ void SVSCamDLL::Close()
 
     isStoping = true;
 
-    currentCam->StreamAcquisitionStop();
     currentCam->closeConnection();
 
     isStoping = false;
@@ -220,7 +222,7 @@ void SVSCamDLL::SoftTrigger()
 }
 
 
-void SVSCamDLL::SoftTriggerAndSavePhoto()
+bool SVSCamDLL::SoftTriggerAndSavePhoto()
 {
     // Emit software trigger command
     // Joe: Software trigger for JT Demo
@@ -264,10 +266,11 @@ void SVSCamDLL::SoftTriggerAndSavePhoto()
     {
         // Time out and no photo captured.
         // ....
+        return false;
     }
 
 	
-	return ;
+	return true;
 }
 
 // default time out is 1000ms

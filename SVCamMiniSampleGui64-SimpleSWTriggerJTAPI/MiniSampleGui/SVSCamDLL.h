@@ -40,7 +40,7 @@ public:
 	virtual BOOL WaitTrigerFinish();
 	virtual BYTE* GetImageData();
 	// Integrated Example: SW Trigger --> WaitFor --> Get Its Image
-    virtual void SoftTriggerAndSavePhoto();
+    virtual bool SoftTriggerAndSavePhoto();
 
 	//virtual void Display(CDC *pDC);
 	//virtual void SetTrigerSource(int nTrigerSource=0);

@@ -12,6 +12,9 @@
 #define WM_DISPLAY_IMAGE	(WM_APP + 400)
 
 
+#include "SVSCamDLL.h"
+
+
 // CMiniSampleDisplayDlg dialog
 class CMiniSampleDisplayDlg : public CDialogEx
 {
@@ -115,4 +118,15 @@ protected:
     long m_nAutoTriggerCount = 0;
     CString strAutoTriggerText;
     afx_msg void OnTimer(UINT_PTR nIDEvent);
+
+
+public:
+    // SVSCamDLL.h/cpp test
+    SVSCamDLL m_SVSCamDLLInst;
+
+    afx_msg void OnBnClickedBtnJtApiSvsCameraOpen();
+    afx_msg void OnBnClickedBtnJtApiSvsCameraCapturePhotoSave();
+    afx_msg void OnBnClickedBtnJtApiSvsCameraClose();
+    CStatic m_SVSCamDLL_Details;
+    long m_nPhotoCounter = 0;
 };

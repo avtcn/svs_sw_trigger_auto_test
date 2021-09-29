@@ -288,8 +288,7 @@ SV_RETURN Camera::StreamAcquisitionStop()
 
     hFeature = NULL;
     if (SV_ERROR_SUCCESS == ret)
-        ret = SVFeatureGetByName(hRemoteDev, "TLParamsLocked", &hFeature);
-
+        ret = SVFeatureGetByName(hRemoteDev, "TLParamsLocked", &hFeature); 
     if (SV_ERROR_SUCCESS == ret)
         ret = SVFeatureSetValueInt64(hRemoteDev, hFeature, 0);
 
@@ -557,7 +556,7 @@ SV_RETURN Camera::GetPivMode(bool *enable)
 
 }
 
-SV_RETURN Camera::setAcquisitionMode(int index )
+SV_RETURN Camera::setAcquisitionMode(int index)
 {
     SV_FEATURE_HANDLE hFeature = NULL;
     SV_RETURN ret = SV_ERROR_UNKNOWN;
@@ -567,7 +566,7 @@ SV_RETURN Camera::setAcquisitionMode(int index )
     if (SV_ERROR_SUCCESS == ret)
         switch (index)
         {
-        case  0 :
+        case  0:
             SVFeatureSetValueEnum(hRemoteDev, hFeature, "SingleFrame");
             break;
         case  1:

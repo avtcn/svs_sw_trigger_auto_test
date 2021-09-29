@@ -262,6 +262,7 @@ void CMiniSampleDisplayDlg::DoDataExchange(CDataExchange* pDX)
 
     DDX_Control(pDX, IDC_FRAME, m_frame_counter);
     DDX_Control(pDX, IDC_SAVED_FRAME, m_saved_frame_counter);
+    DDX_Control(pDX, ID_LABEL_JT_SVS_API_DETAILS, m_SVSCamDLL_Details);
 }
 
 
@@ -291,6 +292,9 @@ ON_BN_CLICKED(IDC_BTN_SOFTWARE_TRIGGER_ONE_PHOTO, &CMiniSampleDisplayDlg::OnBnCl
 ON_BN_CLICKED(IDC_BTN_CLOSE_SVS_CAMERA, &CMiniSampleDisplayDlg::OnBnClickedBtnCloseSvsCamera)
 ON_BN_CLICKED(IDC_BTN_SW_TRIGGER_TIMER_1FPS, &CMiniSampleDisplayDlg::OnBnClickedBtnSwTriggerTimer1fps)
 ON_WM_TIMER()
+ON_BN_CLICKED(IDC_BTN_JT_API_SVS_CAMERA_OPEN, &CMiniSampleDisplayDlg::OnBnClickedBtnJtApiSvsCameraOpen)
+ON_BN_CLICKED(IDC_BTN_JT_API_SVS_CAMERA_CAPTURE_PHOTO_SAVE, &CMiniSampleDisplayDlg::OnBnClickedBtnJtApiSvsCameraCapturePhotoSave)
+ON_BN_CLICKED(IDC_BTN_JT_API_SVS_CAMERA_CLOSE, &CMiniSampleDisplayDlg::OnBnClickedBtnJtApiSvsCameraClose)
 END_MESSAGE_MAP()
 
 
@@ -1086,6 +1090,54 @@ void CMiniSampleDisplayDlg::OnTimer(UINT_PTR nIDEvent)
 
     CDialogEx::OnTimer(nIDEvent);
 }
+
+
+
+
+
+
+
+
+
+// SVSCamDLL.h/cpp example
+
+
+
+void CMiniSampleDisplayDlg::OnBnClickedBtnJtApiSvsCameraOpen()
+{
+    int ret = m_SVSCamDLLInst.Open();
+    if (0 == ret)
+        m_SVSCamDLL_Details.SetWindowText(L"Camera Opened Successfully!");
+    else
+        m_SVSCamDLL_Details.SetWindowText(L"Camera Opened Faied!");
+}
+
+
+void CMiniSampleDisplayDlg::OnBnClickedBtnJtApiSvsCameraCapturePhotoSave()
+{
+    m_nPhotoCounter++;
+
+    bool bRet = m_SVSCamDLLInst.SoftTriggerAndSavePhoto();
+
+    if (bRet) {
+        const CString  strValue(to_string(m_nPhotoCounter).c_str());
+        LPCWSTR wstrValue = static_cast<LPCWSTR>(strValue);
+        m_SVSCamDLL_Details.SetWindowTextW(wstrValue);
+    }
+    else
+        m_SVSCamDLL_Details.SetWindowText(L"Camera Captured Faied!");
+}
+
+
+void CMiniSampleDisplayDlg::OnBnClickedBtnJtApiSvsCameraClose()
+{
+    m_SVSCamDLLInst.Close();
+    m_SVSCamDLL_Details.SetWindowText(L"Camera Closed Successfully!");
+}
+
+
+
+
 
 
 
