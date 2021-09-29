@@ -41,6 +41,7 @@ Camera::~Camera()
     } 
     LeaveCriticalSection(&cscopybufferinfo);
 
+    // release resource
     DeleteCriticalSection(&cscopybufferinfo);
 }
 
@@ -276,6 +277,8 @@ SV_RETURN Camera::StreamAcquisitionStop()
     if (!isStreaming)
         return 0;
 
+    EnterCriticalSection(&cscopybufferinfo);
+
     SV_FEATURE_HANDLE hFeature = NULL;
     uint32_t ExecuteTimeout = 1000;
     SV_RETURN ret = SVFeatureGetByName(hRemoteDev, "AcquisitionStop", &hFeature);
@@ -317,6 +320,8 @@ SV_RETURN Camera::StreamAcquisitionStop()
 
     if (ret == SV_ERROR_SUCCESS)
         isStreaming = false;
+
+    LeaveCriticalSection(&cscopybufferinfo);
 
     return  ret;
 }
