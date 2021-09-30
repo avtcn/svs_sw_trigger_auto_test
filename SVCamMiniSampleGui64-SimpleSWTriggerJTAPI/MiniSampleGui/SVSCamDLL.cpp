@@ -260,19 +260,11 @@ bool SVSCamDLL::SoftTriggerAndSavePhoto()
     SV_FEATURE_HANDLE hFeature = NULL;
     SV_RETURN ret = SV_ERROR_SUCCESS;
 
-    /*
-    hFeature = NULL;
-    uint32_t ExecuteTimeout = 1000;
-    ret = SVFeatureGetByName(currentCam->hRemoteDev, "TriggerSoftware", &hFeature);
+    OutputDebugString(L"SoftTriggerAndSavePhoto(): SoftTrigger signal emitted ...\n");
 
-    if (SV_ERROR_SUCCESS == ret)
-        ret = SVFeatureCommandExecute(currentCam->hRemoteDev, hFeature, ExecuteTimeout);
-    */
-    SoftTrigger();
+    SoftTrigger(); 
 
-
-
-    // TODO: Check and Wait for the new photo 
+    // Check and Wait for the new photo 
     bool bReady = WaitTrigerFinish();
 
     if (bReady)
@@ -285,8 +277,13 @@ bool SVSCamDLL::SoftTriggerAndSavePhoto()
             string  filename = string("Image//") + currentCam->devInfo.displayName + "_"
                 + fixedWidth2(newbufferInfo.iImageId, 8) + "_" + std::to_string(newbufferInfo.iTimeStamp) + ".bmp";
             SV_RETURN  ret = SVUtilSaveImageToFile(newbufferInfo, filename.c_str(), SV_IMAGE_FILE_BMP);
+
+            string strOutput("SoftTriggerAndSavePhoto(): Save new photo: ");
+            strOutput += filename + "\n";
+            OutputDebugString(CA2W(strOutput.c_str()));
         }
 
+        // Must release the memory  allocated inside SVSCamDLL for new received photo data  !!!!!!!
         if (newbufferInfo.pImagePtr)
         {
             delete[] newbufferInfo.pImagePtr;

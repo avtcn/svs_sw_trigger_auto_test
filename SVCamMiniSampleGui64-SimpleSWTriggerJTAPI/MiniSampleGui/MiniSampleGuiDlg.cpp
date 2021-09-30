@@ -1104,13 +1104,14 @@ void CMiniSampleDisplayDlg::OnTimer(UINT_PTR nIDEvent)
 
 void CMiniSampleDisplayDlg::OnBnClickedBtnJtApiSvsCameraOpen()
 {
+    m_nPhotoCounter = 0;
     int ret = m_SVSCamDLLInst.Open();
     if (0 == ret)
         m_SVSCamDLL_Details.SetWindowText(L"Camera Opened Successfully!");
     else
         m_SVSCamDLL_Details.SetWindowText(L"Camera Opened Faied!");
 
-    m_nPhotoCounter = 0;
+    OutputDebugString(CA2W("OnBnClickedBtnJtApiSvsCameraOpen() called ...\n"));
 }
 
 
@@ -1125,8 +1126,10 @@ void CMiniSampleDisplayDlg::OnBnClickedBtnJtApiSvsCameraCapturePhotoSave()
         LPCWSTR wstrValue = static_cast<LPCWSTR>(strValue);
         m_SVSCamDLL_Details.SetWindowTextW(wstrValue);
     }
-    else
-        m_SVSCamDLL_Details.SetWindowText(L"Camera Captured Faied!");
+    else {
+        m_SVSCamDLL_Details.SetWindowText(L"Camera Captured Faied!"); 
+        OutputDebugString(CA2W("OnBnClickedBtnJtApiSvsCameraCapturePhotoSave() failed ...\n"));
+    }
 }
 
 
@@ -1135,6 +1138,8 @@ void CMiniSampleDisplayDlg::OnBnClickedBtnJtApiSvsCameraClose()
     m_SVSCamDLLInst.Close();
     m_SVSCamDLL_Details.SetWindowText(L"Camera Closed Successfully!"); 
     m_nPhotoCounter = 0;
+
+    OutputDebugString(CA2W("OnBnClickedBtnJtApiSvsCameraClose() called ...\n"));
 }
 
 
