@@ -1036,7 +1036,6 @@ void CMiniSampleDisplayDlg::OnBnClickedBtnCloseSvsCamera()
     EnterCriticalSection(&csacquisition);
     currentCam->StreamAcquisitionStop();
     LeaveCriticalSection(&csacquisition);
-    EndWaitCursor();
 
     isStoping = false;
 
@@ -1110,6 +1109,8 @@ void CMiniSampleDisplayDlg::OnBnClickedBtnJtApiSvsCameraOpen()
         m_SVSCamDLL_Details.SetWindowText(L"Camera Opened Successfully!");
     else
         m_SVSCamDLL_Details.SetWindowText(L"Camera Opened Faied!");
+
+    m_nPhotoCounter = 0;
 }
 
 
@@ -1132,7 +1133,8 @@ void CMiniSampleDisplayDlg::OnBnClickedBtnJtApiSvsCameraCapturePhotoSave()
 void CMiniSampleDisplayDlg::OnBnClickedBtnJtApiSvsCameraClose()
 {
     m_SVSCamDLLInst.Close();
-    m_SVSCamDLL_Details.SetWindowText(L"Camera Closed Successfully!");
+    m_SVSCamDLL_Details.SetWindowText(L"Camera Closed Successfully!"); 
+    m_nPhotoCounter = 0;
 }
 
 

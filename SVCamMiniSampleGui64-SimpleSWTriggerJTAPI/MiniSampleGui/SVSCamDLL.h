@@ -76,6 +76,10 @@ public:
     int startAcqThread(); // grab thread in backgound
 
 
+
+private:
+	void Output(const char* szFormat, ...);
+
 };
 
 

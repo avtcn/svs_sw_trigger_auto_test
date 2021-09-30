@@ -6,6 +6,9 @@
 #include "MiniSampleGui.h"
 #include "MiniSampleGuiDlg.h"
 
+#include <stdio.h>
+#include <stdlib.h>
+
 #ifdef _DEBUG
 #define new DEBUG_NEW
 #endif
@@ -35,6 +38,23 @@ CMiniSampleDisplayApp::CMiniSampleDisplayApp()
 CMiniSampleDisplayApp theApp;
 
 
+void InitConsoleWindow()
+{
+    //FILE* oldf;
+    AllocConsole();
+    //freopen("CONOUT$", "w", stdout);
+    FILE *stream; 
+    freopen_s(&stream, "CONOUT$", "w", stdout);
+    //err = freopen_s( &stream, "freopen.out", "w", stderr );
+
+    ShowWindow(GetConsoleWindow(), SW_MINIMIZE);
+}
+void DeInitConsoleWindow()
+{
+    fclose(stdout);
+    FreeConsole();
+}
+
 // CMiniSampleDisplayApp initialization
 
 BOOL CMiniSampleDisplayApp::InitInstance()
@@ -53,6 +73,7 @@ BOOL CMiniSampleDisplayApp::InitInstance()
     CWinApp::InitInstance();
 
     AfxEnableControlContainer();
+
 
     // Create the shell manager, in case the dialog contains
     // any shell tree view or shell list view controls.

@@ -47,6 +47,26 @@ std::string string_format2(const std::string fmt_str, ...) {
     return std::string(formatted.get());
 }
 
+std::wstring string_format_ws(const std::string fmt_str, ...) {
+    int final_n, n = ((int)fmt_str.size()) * 3; /* Reserve two times as much as the length of the fmt_str */
+    std::unique_ptr<char[]> formatted;
+    va_list ap;
+    while(1) {
+        formatted.reset(new char[n]); /* Wrap the plain char array into the unique_ptr */
+        strcpy_s(&formatted[0], fmt_str.size(), fmt_str.c_str());
+        va_start(ap, fmt_str);
+        final_n = vsnprintf(&formatted[0], n, fmt_str.c_str(), ap);
+        va_end(ap);
+        if (final_n < 0 || final_n >= n)
+            n += abs(final_n - n + 1);
+        else
+            break;
+    }
+    std::string strNew = std::string(formatted.get());
+    
+    return s2ws2(strNew);
+}
+
 
 
 //////////////////////////////////////////////////////////////////////
@@ -55,10 +75,14 @@ std::string string_format2(const std::string fmt_str, ...) {
 
 unsigned long __stdcall GrabSVSCameraPhotosThreadfunction(void* context)
 {
+    OutputDebugString(L"\nThread Started: To running ...\n");
+
     // Process only the currently selected camera.
     SVSCamDLL* svCam = (SVSCamDLL*)context;
-    if (svCam != NULL) 
-        svCam->startAcqThread();
+    if (svCam != NULL)
+    {
+        svCam->startAcqThread(); 
+    }
     return 0;
 }
 
@@ -139,9 +163,13 @@ int SVSCamDLL::Open()
     // Open the first camera
     // Set to software trigger mode
     currentCam = cam_container->sv_cam_list.at(0);
-    currentCam->openConnection();
-    currentCam->SetTriggerMode(true);    // enable software trigger by default  
-    currentCam->setAcquisitionMode(2);   // Continous mode
+    ASSERT(currentCam);
+    ret = currentCam->openConnection();
+    ASSERT(SV_ERROR_SUCCESS == ret);
+    ret = currentCam->SetTriggerMode(true);    // enable software trigger by default  
+    ASSERT(SV_ERROR_SUCCESS == ret);
+    ret = currentCam->setAcquisitionMode(2);   // Continous mode
+    ASSERT(SV_ERROR_SUCCESS == ret);
 
     // Get  Camera Information
     currentCam->CamHeight = 0;
@@ -180,9 +208,12 @@ void SVSCamDLL::Close()
     if (currentCam == NULL)
         return;
 
+
+    // 
     isStoping = true;
 
-    currentCam->closeConnection();
+    currentCam->StreamAcquisitionStop();
+    //currentCam->closeConnection();
 
     isStoping = false;
 
@@ -317,9 +348,14 @@ int SVSCamDLL::startAcqThread()
         SV_RETURN ret = currentCam->grab(&bufferInfo);
 
         if (SV_ERROR_ABORT == ret)
-            break;
+        {
+            OutputDebugString(L"Warning: Grab returned SV_ERROR_ABORT ... Skipped it ....\n");
+            //break;
+        }
         else if (SV_ERROR_SUCCESS != ret)
+        {
             continue;
+        }
 
         /*
         if (SaveImg)
@@ -343,5 +379,24 @@ int SVSCamDLL::startAcqThread()
     }
 
     SetEvent(m_acquisitionstopThread);
+
+    OutputDebugString(L"\nThread Finished: To exit!!!!!!\n");
     return  0;
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

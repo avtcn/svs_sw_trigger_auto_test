@@ -1,6 +1,7 @@
 
 #include "Camera.h"
 #include <stdio.h>
+#include <cassert>
 
 
 Camera::Camera(SV_DEVICE_INFO _devInfo)
@@ -587,6 +588,7 @@ SV_RETURN Camera::SetTriggerMode(bool enable)
 
     //retrieve the payload size to allocate the buffers
     ret = SVFeatureGetByName(hRemoteDev, "TriggerMode", &hFeature);
+    assert(SV_ERROR_SUCCESS == ret);
     if (SV_ERROR_SUCCESS != ret)
         return  ret;
 
@@ -594,6 +596,8 @@ SV_RETURN Camera::SetTriggerMode(bool enable)
         ret = SVFeatureSetValueEnum(hRemoteDev, hFeature, "On");
     else
         ret = SVFeatureSetValueEnum(hRemoteDev, hFeature, "Off");
+
+    assert(SV_ERROR_SUCCESS == ret);
 
     return ret;
 }
