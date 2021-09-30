@@ -88,8 +88,6 @@ unsigned long __stdcall GrabSVSCameraPhotosThreadfunction(void* context)
 
 SVSCamDLL::SVSCamDLL()
 {
-    //InitializeCriticalSection(&csacquisition);
-
     sdk_init_done = false;
 
     if(cam_container == NULL)
@@ -129,8 +127,6 @@ SVSCamDLL::~SVSCamDLL()
         delete[] m_newBuffer.pImagePtr;
         m_newBuffer.pImagePtr = NULL;
     }
-
-    //DeleteCriticalSection(&csacquisition);
 }
 
 int SVSCamDLL::Open()
@@ -225,10 +221,7 @@ void SVSCamDLL::Close()
     // 
     isStoping = true;
 
-    //EnterCriticalSection(&csacquisition);
     currentCam->StreamAcquisitionStop();
-    //currentCam->closeConnection();
-    //LeaveCriticalSection(&csacquisition);
 
     isStoping = false;
 
@@ -358,9 +351,7 @@ int SVSCamDLL::startAcqThread()
             continue;
         }
 
-        //EnterCriticalSection(&csacquisition);
         SV_RETURN ret = currentCam->grab(&bufferInfo);
-        //LeaveCriticalSection(&csacquisition);
 
         if (SV_ERROR_ABORT == ret)
         {
