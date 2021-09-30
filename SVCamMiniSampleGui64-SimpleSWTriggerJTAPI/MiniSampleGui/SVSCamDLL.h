@@ -59,6 +59,8 @@ public:
 
 private:
     bool sdk_init_done;
+	//bool bClosed;
+    //CRITICAL_SECTION csacquisition;
 
 	// Local copy of photo buffer from the background grab thread
     SV_BUFFER_INFO m_newBuffer= { 0 };
@@ -71,6 +73,7 @@ private:
     bool isStoping; 
     HANDLE m_thread;
     HANDLE m_acquisitionstopThread; // event to flag whether grab thread has been terminated
+
 
 public:
     int startAcqThread(); // grab thread in backgound

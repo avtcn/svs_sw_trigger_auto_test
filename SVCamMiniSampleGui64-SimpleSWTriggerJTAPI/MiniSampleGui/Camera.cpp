@@ -90,10 +90,7 @@ SV_RETURN Camera::closeConnection()
 {
     printf("close connection\n");
     StreamAcquisitionStop();
-    if(hDS) {
-        SVStreamClose(hDS);
-        hDS = NULL; // Joe
-    }
+    SVStreamClose(hDS);
     SV_RETURN ret = SV_ERROR_SUCCESS;
     ret = SVDeviceClose(hDevice);
     hDevice = NULL;

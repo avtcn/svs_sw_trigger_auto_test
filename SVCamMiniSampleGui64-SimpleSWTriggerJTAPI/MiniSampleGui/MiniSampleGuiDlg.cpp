@@ -333,7 +333,10 @@ BOOL CMiniSampleDisplayDlg::OnInitDialog()
     //  when the application's main window is not a dialog
     SetIcon(m_hIcon, TRUE);			// Set big icon
     SetIcon(m_hIcon, FALSE);		// Set small icon
-    cam_container = new CameraContainer();
+
+    // FIXME: Now the example focus on JT SVS API, so SKIP original example 
+    //cam_container = new CameraContainer();
+    cam_container = NULL;
 
     m_acquisitionstopThread = CreateEvent(NULL, false, false, NULL);
     m_SaveStopThread = CreateEvent(NULL, false, false,  NULL);
@@ -502,6 +505,9 @@ void CMiniSampleDisplayDlg::OnBnClickedButton1()
 
     if (!sdk_init_done)
     {
+        // FIXME: Joe disable original function, or QUIT will NG
+        ASSERT(NULL == cam_container);
+
         if (!cam_container->initSDK())
         {
             m_cam_found.SetWindowTextW(L" initialisation failed !!");

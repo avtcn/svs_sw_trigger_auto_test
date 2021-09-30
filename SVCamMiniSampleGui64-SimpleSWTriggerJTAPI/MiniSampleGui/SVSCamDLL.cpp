@@ -88,9 +88,13 @@ unsigned long __stdcall GrabSVSCameraPhotosThreadfunction(void* context)
 
 SVSCamDLL::SVSCamDLL()
 {
+    //InitializeCriticalSection(&csacquisition);
+
     sdk_init_done = false;
 
-    cam_container = new CameraContainer();
+    if(cam_container == NULL)
+        cam_container = new CameraContainer();
+
     currentCam = NULL; 
 
     isStoping = false;
@@ -110,24 +114,30 @@ SVSCamDLL::~SVSCamDLL()
         acqTerminated = true;
         WaitForSingleObject(m_acquisitionstopThread, INFINITE);
         ResetEvent(m_acquisitionstopThread);
-        CloseHandle(m_thread); 
+        CloseHandle(m_thread);
+        m_thread = NULL;
     }
 
-    if (cam_container)
+    if (cam_container) {
         delete  cam_container;
-    
+        cam_container = NULL;
+    }
+
     // Release allocated memory
     if (m_newBuffer.pImagePtr)
     {
         delete[] m_newBuffer.pImagePtr;
         m_newBuffer.pImagePtr = NULL;
-    } 
+    }
+
+    //DeleteCriticalSection(&csacquisition);
 }
 
 int SVSCamDLL::Open()
 {
     // Dicovery all SVS cameras and open the first one 
     SV_RETURN ret = SV_ERROR_SUCCESS;
+
 
     if (!sdk_init_done)
     {
@@ -164,12 +174,16 @@ int SVSCamDLL::Open()
     // Set to software trigger mode
     currentCam = cam_container->sv_cam_list.at(0);
     ASSERT(currentCam);
+
     ret = currentCam->openConnection();
     ASSERT(SV_ERROR_SUCCESS == ret);
+
+
     ret = currentCam->SetTriggerMode(true);    // enable software trigger by default  
     ASSERT(SV_ERROR_SUCCESS == ret);
     ret = currentCam->setAcquisitionMode(2);   // Continous mode
     ASSERT(SV_ERROR_SUCCESS == ret);
+
 
     // Get  Camera Information
     currentCam->CamHeight = 0;
@@ -198,7 +212,6 @@ int SVSCamDLL::Open()
 
     // OnInitDialog() ==>  DisplayThreadfunction() ==> svCam->startAcqThread() 
 
-
     return 0;
 }
 
@@ -212,8 +225,10 @@ void SVSCamDLL::Close()
     // 
     isStoping = true;
 
+    //EnterCriticalSection(&csacquisition);
     currentCam->StreamAcquisitionStop();
     //currentCam->closeConnection();
+    //LeaveCriticalSection(&csacquisition);
 
     isStoping = false;
 
@@ -223,6 +238,7 @@ void SVSCamDLL::Close()
         delete[] m_newBuffer.pImagePtr;
         m_newBuffer.pImagePtr = NULL;
     } 
+
 
 }
 
@@ -342,7 +358,9 @@ int SVSCamDLL::startAcqThread()
             continue;
         }
 
+        //EnterCriticalSection(&csacquisition);
         SV_RETURN ret = currentCam->grab(&bufferInfo);
+        //LeaveCriticalSection(&csacquisition);
 
         if (SV_ERROR_ABORT == ret)
         {
