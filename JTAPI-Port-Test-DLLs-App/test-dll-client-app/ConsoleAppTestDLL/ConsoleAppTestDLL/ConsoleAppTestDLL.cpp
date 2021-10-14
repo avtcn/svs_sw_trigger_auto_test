@@ -22,6 +22,9 @@ int main()
         "unsigned 64-bit integer." << std::endl;
 
 
+    std::cout << "+++++                                            ++++++++!\n";
+    std::cout << "+++++ JTAPI Test for Open/SwTriggerAndSave/Close ++++++++!\n";
+    std::cout << "+++++                                            ++++++++!\n";
     // JTAPI for SVS Camera test 
     int nret = jtapi_svs_cam_open();
     std::cout << "jtapi_svs_cam_open() called " << nret << std::endl;
@@ -32,6 +35,7 @@ int main()
 
     bret = jtapi_svs_cam_close();
     std::cout << "jtapi_svs_cam_close() called " << bret << std::endl;
+    std::cout << "+++++                  END                       ++++++++!\n";
 
 
 
