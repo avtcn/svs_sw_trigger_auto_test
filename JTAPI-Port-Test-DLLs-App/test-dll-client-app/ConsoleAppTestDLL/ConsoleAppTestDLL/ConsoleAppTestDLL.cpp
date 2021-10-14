@@ -30,7 +30,7 @@ int main()
     std::cout << "jtapi_svs_cam_open() called " << nret << std::endl;
 
     bool bret = false;
-    for(int i = 0; i < 100; i++)
+    for(int i = 0; i < 10000; i++)
          bret = jtapi_svs_cam_sw_trigger_and_save();
 
     bret = jtapi_svs_cam_close();
