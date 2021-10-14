@@ -97,7 +97,9 @@
       <AdditionalDependencies>DllTest.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
-      <Command>xcopy /y /d "..\..\..\test-dll-svs-cam-jpapi\DllTest\Debug\DllTest.dll" "$(OutDir)"</Command>
+      <Command>xcopy /y /d "..\..\..\test-dll-svs-cam-jpapi\DllTest\Debug\DllTest.dll" "$(OutDir)"
+
+xcopy /y /d "..\..\..\test-dll-svs-cam-jpapi\DllTest\Debug\SVGenSDK.dll" "$(OutDir)"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">

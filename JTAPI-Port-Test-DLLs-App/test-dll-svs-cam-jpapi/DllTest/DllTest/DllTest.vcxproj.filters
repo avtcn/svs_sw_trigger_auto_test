@@ -24,6 +24,18 @@
     <ClInclude Include="MathLibrary.h">
       <Filter>头文件</Filter>
     </ClInclude>
+    <ClInclude Include="Camera.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="Cameracontainer.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="SVSCamDLL.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="src\ds_commonwin.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="dllmain.cpp">
@@ -33,6 +45,15 @@
       <Filter>源文件</Filter>
     </ClCompile>
     <ClCompile Include="MathLibrary.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="Camera.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="Cameracontainer.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="SVSCamDLL.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>

@@ -1,4 +1,4 @@
-// MathLibrary.h - Contains declarations of math functions
+﻿// MathLibrary.h - Contains declarations of math functions
 #pragma once
 
 #ifdef MATHLIBRARY_EXPORTS
@@ -6,6 +6,7 @@
 #else
 #define MATHLIBRARY_API __declspec(dllimport)
 #endif
+
 
 // The Fibonacci recurrence relation describes a sequence F
 // where F(n) is { n = 0, a
@@ -32,6 +33,10 @@ extern "C" MATHLIBRARY_API unsigned long long fibonacci_current();
 
 // Get the position of the current value in the sequence.
 extern "C" MATHLIBRARY_API unsigned fibonacci_index();
+
+extern "C" MATHLIBRARY_API int jtapi_svs_cam_open();
+extern "C" MATHLIBRARY_API bool jtapi_svs_cam_sw_trigger_and_save();
+extern "C" MATHLIBRARY_API bool jtapi_svs_cam_close();
 
 
 

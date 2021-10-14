@@ -7,7 +7,7 @@
 
 int main()
 {
-    std::cout << "Hello World!\n";
+    std::cout << "+++++ JTAPI Test for SVS Camera API ++++++++!\n";
 
     // Initialize a Fibonacci relation sequence.
     fibonacci_init(1, 1);
@@ -20,6 +20,23 @@ int main()
     std::cout << fibonacci_index() + 1 <<
         " Fibonacci sequence values fit in an " <<
         "unsigned 64-bit integer." << std::endl;
+
+
+    // JTAPI for SVS Camera test 
+    int nret = jtapi_svs_cam_open();
+    std::cout << "jtapi_svs_cam_open() called " << nret << std::endl;
+
+    bool bret = false;
+    for(int i = 0; i < 10; i++)
+         bret = jtapi_svs_cam_sw_trigger_and_save();
+
+    bret = jtapi_svs_cam_close();
+    std::cout << "jtapi_svs_cam_close() called " << bret << std::endl;
+
+
+
+
+
 }
 
 // 运行程序: Ctrl + F5 或调试 >“开始执行(不调试)”菜单
