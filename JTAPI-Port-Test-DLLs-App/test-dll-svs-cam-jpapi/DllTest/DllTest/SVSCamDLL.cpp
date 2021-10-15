@@ -226,21 +226,18 @@ void SVSCamDLL::Close()
     if (currentCam == NULL)
         return;
 
-
-    // 
+    //
     isStoping = true;
 
     currentCam->StreamAcquisitionStop();
 
     isStoping = false;
 
-
     if (m_newBuffer.pImagePtr)
     {
         delete[] m_newBuffer.pImagePtr;
         m_newBuffer.pImagePtr = NULL;
     } 
-
 
 }
 

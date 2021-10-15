@@ -77,7 +77,6 @@ int jtapi_svs_cam_open()
 }
 
 
-
 bool jtapi_svs_cam_sw_trigger_and_save()
 {
     m_nPhotoCounter++;
