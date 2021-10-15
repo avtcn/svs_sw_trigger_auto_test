@@ -26,9 +26,9 @@ public:
 }
 ```
 
-# DLL 库实现
+# 1. DLL 库实现
 
-```
+```c++
 // ----------------------------- BEGIN: JT API for SVS Camera: Software Trigger Capture --------------------------------- //
 
 int jtapi_svs_cam_open()
@@ -63,43 +63,43 @@ DLL库实现在目录 `JTAPI-Port-Test-DLLs-App\test-dll-svs-cam-jpapi\DllTest`�
 2. DllTest.dll （DLL文件，包含以上三个函数的实现）
 3. SVGenSDK.dll （32位 SVS 相机库文件）
 
-# DLL 库的使用
+# 2. DLL 库的使用
 
 `JTAPI-Port-Test-DLLs-App\test-dll-client-app\ConsoleAppTestDLL`目录实现了一个命令行例程，调用以上 `DllTest.dll` 文件。
 
 ```c++
-    std::cout << "+++++                                            ++++++++!\n";
-    std::cout << "+++++ JTAPI Test for Open/SwTriggerAndSave/Close ++++++++!\n";
-    std::cout << "+++++                                            ++++++++!\n";
-    // JTAPI for SVS Camera test 
-    int nret = jtapi_svs_cam_open();
-    std::cout << "jtapi_svs_cam_open() called " << nret << std::endl;
+std::cout << "+++++                                            ++++++++!\n";
+std::cout << "+++++ JTAPI Test for Open/SwTriggerAndSave/Close ++++++++!\n";
+std::cout << "+++++                                            ++++++++!\n";
+// JTAPI for SVS Camera test 
+int nret = jtapi_svs_cam_open();
+std::cout << "jtapi_svs_cam_open() called " << nret << std::endl;
 
-    bool bret = false;
-    for(int i = 0; i < 10000; i++)
-         bret = jtapi_svs_cam_sw_trigger_and_save();
+bool bret = false;
+for(int i = 0; i < 10000; i++)
+    bret = jtapi_svs_cam_sw_trigger_and_save();
 
-    bret = jtapi_svs_cam_close();
-    std::cout << "jtapi_svs_cam_close() called " << bret << std::endl;
-    std::cout << "+++++                  END                       ++++++++!\n";
+bret = jtapi_svs_cam_close();
+std::cout << "jtapi_svs_cam_close() called " << bret << std::endl;
+std::cout << "+++++                  END                       ++++++++!\n";
 ```
 
 以上例程调用基于  `DllTest.dll` 文件中实现在三个函数，以循环软件 触发采集 10000 次作为例子。
 
 
 
-# DLL库及其应用
+# 3. DLL库及其应用
 ![](screenshot-run.gif)
 
 
 
-# SVS Cam其它功能实现
+# 4. SVS Cam其它功能实现
 类似于：
 ```c++
-	// SoftTriggerAndSavePhoto()由以下函数实现
-	virtual void SoftTrigger(); 
-	virtual BOOL WaitTrigerFinish();
-	virtual BYTE* GetImageData();
+// SoftTriggerAndSavePhoto()由以下函数实现
+virtual void SoftTrigger(); 
+virtual BOOL WaitTrigerFinish();
+virtual BYTE* GetImageData();
 ```
 可以实现诸如 曝光参数 设定，Gamma设定，等函数。
 
