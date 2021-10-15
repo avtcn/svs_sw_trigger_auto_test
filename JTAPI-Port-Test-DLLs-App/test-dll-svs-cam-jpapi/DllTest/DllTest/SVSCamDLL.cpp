@@ -161,6 +161,7 @@ int SVSCamDLL::Open()
             {
                 const string strValue((*it)->devInfo.model);
                 //LPCWSTR ws = static_cast<LPCWSTR>(strValue);
+                std::cout << "\n" << strValue << std::endl;
             }
 
         string st2 = to_string(CamAnz);
@@ -169,6 +170,8 @@ int SVSCamDLL::Open()
     else
     {
         //m_cam_found.SetWindowTextW(L" NO Cameras found !!");
+        std::cout << "\nWARNING: " << "NO Cameras found !!" << std::endl;
+        return -1;
     }
 
     // Open the first camera
