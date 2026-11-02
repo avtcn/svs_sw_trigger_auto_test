@@ -107,7 +107,9 @@ protected:
     CStatic m_frame_counter;
     CStatic m_saved_frame_counter;
     CStatic m_mode_tips;
+    bool m_bCameraOpened = false;
     void UpdateModeTips();
+    void UpdateUIControlsState();
     afx_msg void OnBnClickedButtonSofttrigger();
     afx_msg void OnBnClickedRadioFreerun();
     afx_msg void OnBnClickedRadioSwTrigger();

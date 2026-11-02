@@ -372,6 +372,9 @@ BOOL CMiniSampleDisplayDlg::OnInitDialog()
     if (CWnd* pBtnSoftTrigger = GetDlgItem(IDC_BUTTON_SOFTTRIGGER))
         pBtnSoftTrigger->ShowWindow(SW_HIDE);
 
+    m_bCameraOpened = false;
+    UpdateUIControlsState();
+
     //ShowWindow(SW_SHOW);
     //displg.ShowWindow(SW_SHOWMAXIMIZED);
 
@@ -927,6 +930,35 @@ void CMiniSampleDisplayDlg::UpdateModeTips()
     }
 }
 
+void CMiniSampleDisplayDlg::UpdateUIControlsState()
+{
+    // Open button enabled only when camera is not opened
+    if (CWnd* pBtnOpen = GetDlgItem(IDC_BTN_OPEN_SVS_CAMERA))
+        pBtnOpen->EnableWindow(!m_bCameraOpened);
+
+    // Close button enabled only when camera is opened
+    if (CWnd* pBtnClose = GetDlgItem(IDC_BTN_CLOSE_SVS_CAMERA))
+        pBtnClose->EnableWindow(m_bCameraOpened);
+
+    // Software trigger buttons enabled only when camera is opened AND in Software Trigger Mode
+    bool bEnableSwTrigger = m_bCameraOpened && (IsDlgButtonChecked(IDC_RADIO_SW_TRIGGER) != 0);
+
+    if (CWnd* pBtnSwTrigger = GetDlgItem(IDC_BTN_SOFTWARE_TRIGGER_ONE_PHOTO))
+        pBtnSwTrigger->EnableWindow(bEnableSwTrigger);
+
+    if (CWnd* pBtnSwTimer = GetDlgItem(IDC_BTN_SW_TRIGGER_TIMER_1FPS))
+        pBtnSwTimer->EnableWindow(bEnableSwTrigger);
+
+    // If auto trigger was running but software trigger mode is disabled (or camera closed), stop timer
+    if (!bEnableSwTrigger && m_bAutoTrigger)
+    {
+        KillTimer(1);
+        m_bAutoTrigger = false;
+        m_nAutoTriggerCount = 0;
+        SetDlgItemText(IDC_BTN_SW_TRIGGER_TIMER_1FPS, strAutoTriggerText);
+    }
+}
+
 void CMiniSampleDisplayDlg::OnBnClickedRadioFreerun()
 {
     if (currentCam != NULL && currentCam->is_opened)
@@ -935,6 +967,7 @@ void CMiniSampleDisplayDlg::OnBnClickedRadioFreerun()
         m_cam_found.SetWindowTextW(L"Switched to FreeRun Mode");
         UpdateModeTips();
     }
+    UpdateUIControlsState();
 }
 
 void CMiniSampleDisplayDlg::OnBnClickedRadioSwTrigger()
@@ -946,6 +979,7 @@ void CMiniSampleDisplayDlg::OnBnClickedRadioSwTrigger()
         m_cam_found.SetWindowTextW(L"Switched to Software Trigger Mode");
         UpdateModeTips();
     }
+    UpdateUIControlsState();
 }
 
 void CMiniSampleDisplayDlg::OnBnClickedRadioHwTrigger()
@@ -959,6 +993,7 @@ void CMiniSampleDisplayDlg::OnBnClickedRadioHwTrigger()
         m_cam_found.SetWindowTextW(L"Switched to Hardware Trigger Mode");
         UpdateModeTips();
     }
+    UpdateUIControlsState();
 }
 void CMiniSampleDisplayDlg::OnBnClickedBtnOpenSvsCamera()
 {
@@ -1059,6 +1094,8 @@ void CMiniSampleDisplayDlg::OnBnClickedBtnOpenSvsCamera()
 
     // OnInitDialog() ==>  DisplayThreadfunction() ==> svCam->startAcqThread() 
 
+    m_bCameraOpened = true;
+    UpdateUIControlsState();
     UpdateModeTips();
     return;
 }
@@ -1145,6 +1182,8 @@ void CMiniSampleDisplayDlg::OnBnClickedBtnCloseSvsCamera()
 
     // Tips
     m_cam_found.SetWindowTextW(L"SVS Camera Closed !!");
+    m_bCameraOpened = false;
+    UpdateUIControlsState();
     m_mode_tips.SetWindowTextW(L"");
     m_nSWTriggerCount = 0;
 
