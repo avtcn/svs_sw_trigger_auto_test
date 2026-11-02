@@ -7,7 +7,7 @@ Based on SVCamMiniSampleGui64, Implement automatically software trigger testing 
 3. ...
 
 ## Screenshot
-![](svscamera-sw-trigger-auto.gif)
+![](svscamera-sw-trigger-auto.mp4)
 
 
 ## Modification
