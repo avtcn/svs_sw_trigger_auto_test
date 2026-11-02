@@ -11,6 +11,7 @@ Implement modes switching among:
 3. ...
 
 ## Screenshot
+![](svscamera-sw-trigger-auto.gif)
 ![](svscamera-sw-trigger-auto.mp4)
 
 
