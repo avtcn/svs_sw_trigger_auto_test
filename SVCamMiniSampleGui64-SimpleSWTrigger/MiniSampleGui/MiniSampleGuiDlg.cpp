@@ -20,6 +20,7 @@
 //#define SVS_SDK_DLL „Path to SVGenSDK64.dll// use this define to load specific SDK Dll path otherwise it will load Dll on SVS_SDK_BIN_64 environmental variable
 #include "sv_gen_sdk_dynamic.h"
 #endif
+#include "version_git.h"
 
 std::wstring s2ws(const std::string& s)
 {
@@ -333,6 +334,11 @@ BOOL CMiniSampleDisplayDlg::OnInitDialog()
     //  when the application's main window is not a dialog
     SetIcon(m_hIcon, TRUE);			// Set big icon
     SetIcon(m_hIcon, FALSE);		// Set small icon
+
+    // Set dialogue title with commit id and build timestamp
+    CString strTitle;
+    strTitle.Format(L"SVCamControl [Commit: %S | Built: %S %S]", GIT_COMMIT_ID, __DATE__, __TIME__);
+    SetWindowText(strTitle);
     cam_container = new CameraContainer();
 
     m_acquisitionstopThread = CreateEvent(NULL, false, false, NULL);

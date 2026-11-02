@@ -349,3 +349,7 @@ MigrationBackup/
 
 # Ionide (cross platform F# VS Code tools) working folder
 .ionide/
+
+# Auto-generated git version header
+version_git.h
+version_git.h.tmp
