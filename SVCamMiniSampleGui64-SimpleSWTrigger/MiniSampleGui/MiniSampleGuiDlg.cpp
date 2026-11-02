@@ -375,6 +375,9 @@ BOOL CMiniSampleDisplayDlg::OnInitDialog()
     m_bCameraOpened = false;
     UpdateUIControlsState();
 
+    // Automatically call Discovery button once when app starts up
+    OnBnClickedButton1();
+
     //ShowWindow(SW_SHOW);
     //displg.ShowWindow(SW_SHOWMAXIMIZED);
 
@@ -545,6 +548,8 @@ void CMiniSampleDisplayDlg::OnBnClickedButton1()
         string st2 = to_string(CamAnz);
         st1.append(st2);
         m_cam_found.SetWindowTextW(CString(st1.c_str()));
+        if (currentIndex < 0)
+            currentIndex = 0;
     }
     else
         m_cam_found.SetWindowTextW(L" NO Cameras found !!");
