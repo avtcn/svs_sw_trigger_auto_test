@@ -262,6 +262,7 @@ void CMiniSampleDisplayDlg::DoDataExchange(CDataExchange* pDX)
 
     DDX_Control(pDX, IDC_FRAME, m_frame_counter);
     DDX_Control(pDX, IDC_SAVED_FRAME, m_saved_frame_counter);
+    DDX_Control(pDX, IDC_STATIC_MODE_TIPS, m_mode_tips);
 }
 
 
@@ -359,6 +360,7 @@ BOOL CMiniSampleDisplayDlg::OnInitDialog()
 
     // Default to Software Trigger Mode
     CheckRadioButton(IDC_RADIO_FREERUN, IDC_RADIO_HW_TRIGGER, IDC_RADIO_SW_TRIGGER);
+    m_mode_tips.SetWindowTextW(L"");
 
     m_nSWTriggerCount = 0;
 
@@ -903,12 +905,35 @@ void CMiniSampleDisplayDlg::OnBnClickedButtonSofttrigger()
 
 }
 
+void CMiniSampleDisplayDlg::UpdateModeTips()
+{
+    if (currentCam == NULL || !currentCam->is_opened)
+    {
+        m_mode_tips.SetWindowTextW(L"");
+        return;
+    }
+
+    if (IsDlgButtonChecked(IDC_RADIO_FREERUN))
+    {
+        m_mode_tips.SetWindowTextW(L"Now camera in freerun mode, you can see frames counter increasing ...");
+    }
+    else if (IsDlgButtonChecked(IDC_RADIO_HW_TRIGGER))
+    {
+        m_mode_tips.SetWindowTextW(L"Please provide external 5V TTL signal to LINE1 pin to trigger camera ...");
+    }
+    else // IDC_RADIO_SW_TRIGGER
+    {
+        m_mode_tips.SetWindowTextW(L"Please click software trigger button to capture one frame ...");
+    }
+}
+
 void CMiniSampleDisplayDlg::OnBnClickedRadioFreerun()
 {
     if (currentCam != NULL && currentCam->is_opened)
     {
         currentCam->SetTriggerMode(false);
         m_cam_found.SetWindowTextW(L"Switched to FreeRun Mode");
+        UpdateModeTips();
     }
 }
 
@@ -919,6 +944,7 @@ void CMiniSampleDisplayDlg::OnBnClickedRadioSwTrigger()
         currentCam->SetTriggerMode(true);
         currentCam->SetTriggerSource("Software");
         m_cam_found.SetWindowTextW(L"Switched to Software Trigger Mode");
+        UpdateModeTips();
     }
 }
 
@@ -931,9 +957,9 @@ void CMiniSampleDisplayDlg::OnBnClickedRadioHwTrigger()
         if (SV_ERROR_SUCCESS != ret)
             currentCam->SetTriggerSource("Line0");
         m_cam_found.SetWindowTextW(L"Switched to Hardware Trigger Mode");
+        UpdateModeTips();
     }
 }
-
 void CMiniSampleDisplayDlg::OnBnClickedBtnOpenSvsCamera()
 {
     // Dicovery all SVS cameras and open the first one 
@@ -1033,6 +1059,7 @@ void CMiniSampleDisplayDlg::OnBnClickedBtnOpenSvsCamera()
 
     // OnInitDialog() ==>  DisplayThreadfunction() ==> svCam->startAcqThread() 
 
+    UpdateModeTips();
     return;
 }
 
@@ -1098,6 +1125,15 @@ void CMiniSampleDisplayDlg::OnBnClickedBtnCloseSvsCamera()
     if (currentCam == NULL)
         return;
 
+    // Stop auto trigger timer if running
+    if (m_bAutoTrigger)
+    {
+        KillTimer(1);
+        m_bAutoTrigger = false;
+        m_nAutoTriggerCount = 0;
+        SetDlgItemText(IDC_BTN_SW_TRIGGER_TIMER_1FPS, strAutoTriggerText);
+    }
+
     isStoping = true;
 
     EnterCriticalSection(&csacquisition);
@@ -1109,6 +1145,7 @@ void CMiniSampleDisplayDlg::OnBnClickedBtnCloseSvsCamera()
 
     // Tips
     m_cam_found.SetWindowTextW(L"SVS Camera Closed !!");
+    m_mode_tips.SetWindowTextW(L"");
     m_nSWTriggerCount = 0;
 
     // Hide left column buttons: Stop, Start, Soft Trigger (do not delete, only hide from dialog)

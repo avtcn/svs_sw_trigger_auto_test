@@ -291,7 +291,7 @@ SV_RETURN Camera::StreamAcquisitionStop()
         ret = SVFeatureSetValueInt64(hRemoteDev, hFeature, 0);
 
     if (SV_ERROR_SUCCESS == ret)
-        ret = SVStreamAcquisitionStop(hDS, SV_ACQ_STOP_FLAGS_DEFAULT);
+        ret = SVStreamAcquisitionStop(hDS, SV_ACQ_STOP_FLAGS_KILL);
 
 
     if (SV_ERROR_SUCCESS == ret)
@@ -328,7 +328,7 @@ SV_RETURN   Camera::grab(SV_BUFFER_INFO  *m_InfoConverted )
     void * data = NULL;
 
     SV_BUFFER_HANDLE bufhandle = NULL;
-    SV_RETURN ret = SVStreamWaitForNewBuffer(hDS, &data, &bufhandle, 1000);
+    SV_RETURN ret = SVStreamWaitForNewBuffer(hDS, &data, &bufhandle, 100);
 
 
 
