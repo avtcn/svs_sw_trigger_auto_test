@@ -43,6 +43,8 @@ public:
 
     SV_RETURN SetTriggerMode(bool enable);
     SV_RETURN GetTriggerMode(bool *enable);
+    SV_RETURN SetTriggerSource(const char* sourceName);
+    SV_RETURN GetTriggerSource(char* buffer, size_t bufferSize);
 
     SV_RETURN SetPivMode(bool enable);
     SV_RETURN GetPivMode(bool *enable);

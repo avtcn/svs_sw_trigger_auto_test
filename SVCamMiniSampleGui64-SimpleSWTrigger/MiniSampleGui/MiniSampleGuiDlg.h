@@ -107,6 +107,9 @@ protected:
     CStatic m_frame_counter;
     CStatic m_saved_frame_counter;
     afx_msg void OnBnClickedButtonSofttrigger();
+    afx_msg void OnBnClickedRadioFreerun();
+    afx_msg void OnBnClickedRadioSwTrigger();
+    afx_msg void OnBnClickedRadioHwTrigger();
     afx_msg void OnBnClickedBtnOpenSvsCamera();
     afx_msg void OnBnClickedBtnSoftwareTriggerOnePhoto();
     afx_msg void OnBnClickedBtnCloseSvsCamera();

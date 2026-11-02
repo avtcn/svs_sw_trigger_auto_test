@@ -34,7 +34,7 @@ Camera::~Camera()
 
     // Uninitilize local copy of buffer info
     EnterCriticalSection(&cscopybufferinfo);
-    if (NULL == copyBufferInfo.pImagePtr)
+    if (NULL != copyBufferInfo.pImagePtr)
     {
         delete[] copyBufferInfo.pImagePtr;
         copyBufferInfo.pImagePtr = NULL;
@@ -611,6 +611,29 @@ SV_RETURN Camera::GetTriggerMode(bool *enable)
         *enable = true;
     delete triggerMode;
 
+    return ret;
+}
+
+
+SV_RETURN Camera::SetTriggerSource(const char* sourceName)
+{
+    SV_FEATURE_HANDLE hFeature = NULL;
+    SV_RETURN ret = SVFeatureGetByName(hRemoteDev, "TriggerSource", &hFeature);
+    if (SV_ERROR_SUCCESS == ret && hFeature != NULL)
+    {
+        ret = SVFeatureSetValueEnum(hRemoteDev, hFeature, sourceName);
+    }
+    return ret;
+}
+
+SV_RETURN Camera::GetTriggerSource(char* buffer, size_t bufferSize)
+{
+    SV_FEATURE_HANDLE hFeature = NULL;
+    SV_RETURN ret = SVFeatureGetByName(hRemoteDev, "TriggerSource", &hFeature);
+    if (SV_ERROR_SUCCESS == ret && hFeature != NULL)
+    {
+        ret = SVFeatureGetValueEnum(hRemoteDev, hFeature, buffer, (uint32_t)bufferSize);
+    }
     return ret;
 }
 

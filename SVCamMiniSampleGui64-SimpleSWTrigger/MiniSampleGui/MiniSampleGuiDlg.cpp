@@ -1,4 +1,4 @@
-﻿
+
 // MiniSample DisplayDlg.cpp : implementation file
 //
 
@@ -286,6 +286,9 @@ ON_BN_CLICKED(IDC_CHECK2, &CMiniSampleDisplayDlg::OnBnClickedSave)
 ON_MESSAGE(WM_DISPLAY_IMAGE, WMDisplayImage)
 
 ON_BN_CLICKED(IDC_BUTTON_SOFTTRIGGER, &CMiniSampleDisplayDlg::OnBnClickedButtonSofttrigger)
+ON_BN_CLICKED(IDC_RADIO_FREERUN, &CMiniSampleDisplayDlg::OnBnClickedRadioFreerun)
+ON_BN_CLICKED(IDC_RADIO_SW_TRIGGER, &CMiniSampleDisplayDlg::OnBnClickedRadioSwTrigger)
+ON_BN_CLICKED(IDC_RADIO_HW_TRIGGER, &CMiniSampleDisplayDlg::OnBnClickedRadioHwTrigger)
 ON_BN_CLICKED(IDC_BTN_OPEN_SVS_CAMERA, &CMiniSampleDisplayDlg::OnBnClickedBtnOpenSvsCamera)
 ON_BN_CLICKED(IDC_BTN_SOFTWARE_TRIGGER_ONE_PHOTO, &CMiniSampleDisplayDlg::OnBnClickedBtnSoftwareTriggerOnePhoto)
 ON_BN_CLICKED(IDC_BTN_CLOSE_SVS_CAMERA, &CMiniSampleDisplayDlg::OnBnClickedBtnCloseSvsCamera)
@@ -353,6 +356,9 @@ BOOL CMiniSampleDisplayDlg::OnInitDialog()
     m_piv_mode.AddString(L"ON");
 
     m_aoi.SetCheck(0);
+
+    // Default to Software Trigger Mode
+    CheckRadioButton(IDC_RADIO_FREERUN, IDC_RADIO_HW_TRIGGER, IDC_RADIO_SW_TRIGGER);
 
     m_nSWTriggerCount = 0;
 
@@ -897,6 +903,37 @@ void CMiniSampleDisplayDlg::OnBnClickedButtonSofttrigger()
 
 }
 
+void CMiniSampleDisplayDlg::OnBnClickedRadioFreerun()
+{
+    if (currentCam != NULL && currentCam->is_opened)
+    {
+        currentCam->SetTriggerMode(false);
+        m_cam_found.SetWindowTextW(L"Switched to FreeRun Mode");
+    }
+}
+
+void CMiniSampleDisplayDlg::OnBnClickedRadioSwTrigger()
+{
+    if (currentCam != NULL && currentCam->is_opened)
+    {
+        currentCam->SetTriggerMode(true);
+        currentCam->SetTriggerSource("Software");
+        m_cam_found.SetWindowTextW(L"Switched to Software Trigger Mode");
+    }
+}
+
+void CMiniSampleDisplayDlg::OnBnClickedRadioHwTrigger()
+{
+    if (currentCam != NULL && currentCam->is_opened)
+    {
+        currentCam->SetTriggerMode(true);
+        SV_RETURN ret = currentCam->SetTriggerSource("Line1");
+        if (SV_ERROR_SUCCESS != ret)
+            currentCam->SetTriggerSource("Line0");
+        m_cam_found.SetWindowTextW(L"Switched to Hardware Trigger Mode");
+    }
+}
+
 void CMiniSampleDisplayDlg::OnBnClickedBtnOpenSvsCamera()
 {
     // Dicovery all SVS cameras and open the first one 
@@ -936,13 +973,39 @@ void CMiniSampleDisplayDlg::OnBnClickedBtnOpenSvsCamera()
     else
         m_cam_found.SetWindowTextW(L" NO Cameras found !!");
     m_cameras.SetCurSel(currentIndex);
+    if (cam_container->sv_cam_list.empty())
+    {
+        m_cam_found.SetWindowTextW(L" NO Cameras found !!");
+        return;
+    }
 
     // Open the first camera
-    // Set to software trigger mode
     currentCam = cam_container->sv_cam_list.at(0);
     currentCam->openConnection();
-    currentCam->SetTriggerMode(true);    // enable software trigger by default  
+
+    // Configure mode based on radio selections:
+    if (IsDlgButtonChecked(IDC_RADIO_FREERUN))
+    {
+        currentCam->SetTriggerMode(false);    // FreeRun Mode: TriggerMode Off
+        m_cam_found.SetWindowTextW(L"Camera Opened (FreeRun Mode)");
+    }
+    else if (IsDlgButtonChecked(IDC_RADIO_HW_TRIGGER))
+    {
+        currentCam->SetTriggerMode(true);     // Hardware Trigger Mode
+        SV_RETURN sret = currentCam->SetTriggerSource("Line1");
+        if (SV_ERROR_SUCCESS != sret)
+            currentCam->SetTriggerSource("Line0");
+        m_cam_found.SetWindowTextW(L"Camera Opened (Hardware Trigger Mode)");
+    }
+    else // IDC_RADIO_SW_TRIGGER
+    {
+        currentCam->SetTriggerMode(true);     // Software Trigger Mode
+        currentCam->SetTriggerSource("Software");
+        m_cam_found.SetWindowTextW(L"Camera Opened (Software Trigger Mode)");
+    }
+
     currentCam->setAcquisitionMode(2);   // Continous mode
+
 
     // Get  Camera Information
     currentCam->CamHeight = 0;
