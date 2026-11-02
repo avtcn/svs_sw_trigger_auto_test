@@ -1,4 +1,4 @@
-
+﻿
 // MiniSample DisplayDlg.cpp : implementation file
 //
 
@@ -355,6 +355,14 @@ BOOL CMiniSampleDisplayDlg::OnInitDialog()
     m_aoi.SetCheck(0);
 
     m_nSWTriggerCount = 0;
+
+    // Hide left column buttons: Stop, Start, Soft Trigger (do not delete, only hide from dialog)
+    if (CWnd* pBtnStop = GetDlgItem(IDC_BUTTON_STOP))
+        pBtnStop->ShowWindow(SW_HIDE);
+    if (CWnd* pBtnStart = GetDlgItem(IDC_BUTTON_START))
+        pBtnStart->ShowWindow(SW_HIDE);
+    if (CWnd* pBtnSoftTrigger = GetDlgItem(IDC_BUTTON_SOFTTRIGGER))
+        pBtnSoftTrigger->ShowWindow(SW_HIDE);
 
     //ShowWindow(SW_SHOW);
     //displg.ShowWindow(SW_SHOWMAXIMIZED);
@@ -1039,6 +1047,14 @@ void CMiniSampleDisplayDlg::OnBnClickedBtnCloseSvsCamera()
     // Tips
     m_cam_found.SetWindowTextW(L"SVS Camera Closed !!");
     m_nSWTriggerCount = 0;
+
+    // Hide left column buttons: Stop, Start, Soft Trigger (do not delete, only hide from dialog)
+    if (CWnd* pBtnStop = GetDlgItem(IDC_BUTTON_STOP))
+        pBtnStop->ShowWindow(SW_HIDE);
+    if (CWnd* pBtnStart = GetDlgItem(IDC_BUTTON_START))
+        pBtnStart->ShowWindow(SW_HIDE);
+    if (CWnd* pBtnSoftTrigger = GetDlgItem(IDC_BUTTON_SOFTTRIGGER))
+        pBtnSoftTrigger->ShowWindow(SW_HIDE);
 
     if (m_newBuffer.pImagePtr)
     {
