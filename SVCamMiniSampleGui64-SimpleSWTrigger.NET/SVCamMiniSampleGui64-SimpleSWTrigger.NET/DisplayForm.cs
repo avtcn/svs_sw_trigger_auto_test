@@ -137,7 +137,12 @@ namespace SVCamApi
 
                     if (!IsDisposed && IsHandleCreated)
                     {
-                        BeginInvoke(new Action(Invalidate));
+                        BeginInvoke(new Action(() =>
+                        {
+                            if (IsDisposed) return;
+                            Text = $"Display - {width}x{height} (Frame: {info.iImageId})";
+                            Invalidate();
+                        }));
                     }
                     else
                     {

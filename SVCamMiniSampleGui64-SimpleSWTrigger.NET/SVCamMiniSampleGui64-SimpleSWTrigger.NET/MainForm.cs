@@ -26,11 +26,16 @@ namespace SVCamApi
 
         private bool SaveImg = false;
         private int save_img_count = 0;
-        private int save_img_buffer_count = 2;
 
         private readonly Queue<Tuple<SVcamApi._SV_BUFFER_INFO, byte[]>> save_queue = new Queue<Tuple<SVcamApi._SV_BUFFER_INFO, byte[]>>();
         private readonly object save_lock = new object();
         private readonly object csacquisition = new object();
+
+        // Received FPS measurement variables
+        private readonly Queue<long> m_fpsTimestamps = new Queue<long>();
+        private readonly object m_fpsLock = new object();
+        private double m_measuredFps = 0.0;
+        private long m_lastFrameReceivedTicks = 0;
 
         private Thread m_acqThread = null;
         private Thread m_saveThread = null;
@@ -108,6 +113,9 @@ namespace SVCamApi
             m_acqThread = new Thread(AcqThreadFunction) { IsBackground = true, Name = "AcqThread" };
             m_acqThread.Start();
 
+            // Start timer for real-time received FPS display
+            timerFps.Start();
+
             // Default combobox settings
             if (cmbWhiteBalance.Items.Count > 0)
                 cmbWhiteBalance.SelectedIndex = 3; // "Off"
@@ -115,12 +123,21 @@ namespace SVCamApi
                 cmbPivMode.SelectedIndex = 0; // "Off"
 
             chkAOI.Checked = false;
+            chkAutoSave.Checked = false;
+            chkAutoSave.Enabled = false;
+            SaveImg = false;
+            cmbWhiteBalance.Enabled = false;
+            lblAutoWhiteBalance.Enabled = false;
+            cmbPivMode.Enabled = false;
+            lblPivMode.Enabled = false;
+
             rbSwTrigger.Checked = true;
             m_nSWTriggerCount = 0;
             m_bCameraOpened = false;
 
             UpdateUIControlsState();
             UpdateModeTips();
+            UpdateCameraParamLabels();
 
             // Automatically call Discovery once when app starts up
             btnDiscovery_Click(this, EventArgs.Empty);
@@ -196,9 +213,6 @@ namespace SVCamApi
             if (sl >= 0 && sl < cam_container.sv_cam_list.Count)
             {
                 currentCam = cam_container.sv_cam_list[sl];
-                currentCam.openConnection();
-                currentCam.SetTriggerMode(true);
-                currentCam.setAcquisitionMode(2); // Continuous
             }
         }
 
@@ -247,6 +261,33 @@ namespace SVCamApi
                 currentCam = cam_container.sv_cam_list[currentIndex];
                 currentCam.openConnection();
 
+                // Configure camera settings after opencamera operation (matching SVCamMiniSample64-ROI-Exp-Mono8):
+                // 1. Set image format to Mono8
+                // 2. Set exposure time to 10 ms (10000 us)
+                Console.WriteLine("\n--- Configure camera after opencamera operation ---");
+                currentCam.SetCameraPixelFormat("Mono8");
+                currentCam.SetCameraExposureTime(10000.0); // 10 ms = 10000 us
+                Console.WriteLine("----------------------------------------------------\n");
+
+                // 3. Configure ROI: 200*200 centered on sensor if checked, else full sensor
+                if (chkAOI.Checked)
+                {
+                    Console.WriteLine("Applying ROI: 200x200 centered on sensor...");
+                    currentCam.SetCameraROI(200, 200, center: true);
+                }
+                else
+                {
+                    long sensorW = currentCam.SensorWidth > 0 ? currentCam.SensorWidth : currentCam.CamWidth;
+                    long sensorH = currentCam.SensorHeight > 0 ? currentCam.SensorHeight : currentCam.CamHeight;
+                    if (sensorW <= 0 || sensorH <= 0)
+                    {
+                        currentCam.GetSensorDimensions(out sensorW, out sensorH);
+                    }
+                    currentCam.SetCameraROI(sensorW, sensorH, center: false);
+                }
+
+                UpdateCameraParamLabels();
+
                 // Configure mode based on radio selections:
                 if (rbFreeRun.Checked)
                 {
@@ -270,32 +311,14 @@ namespace SVCamApi
 
                 currentCam.setAcquisitionMode(2); // Continuous mode
 
-                // Get camera dimensions
-                currentCam.CamHeight = 0;
-                currentCam.CamWidth = 0;
-
+                // Configure frame rate (Exposure time is already configured above via SetCameraExposureTime)
                 IntPtr hFeature = IntPtr.Zero;
-                cam_container.myApi.SVS_FeatureGetByName(currentCam.hRemoteDev, "SensorWidth", ref hFeature);
-                if (hFeature != IntPtr.Zero)
-                    cam_container.myApi.SVS_FeatureGetValueInt64(currentCam.hRemoteDev, hFeature, ref currentCam.CamWidth);
-
-                hFeature = IntPtr.Zero;
-                cam_container.myApi.SVS_FeatureGetByName(currentCam.hRemoteDev, "SensorHeight", ref hFeature);
-                if (hFeature != IntPtr.Zero)
-                    cam_container.myApi.SVS_FeatureGetValueInt64(currentCam.hRemoteDev, hFeature, ref currentCam.CamHeight);
-
-                // Configure frame rate and Exposure
-                hFeature = IntPtr.Zero;
                 cam_container.myApi.SVS_FeatureGetByName(currentCam.hRemoteDev, "AcquisitionFrameRate", ref hFeature);
                 if (hFeature != IntPtr.Zero)
                     cam_container.myApi.SVS_FeatureSetValueFloat(currentCam.hRemoteDev, hFeature, 15.0);
 
-                hFeature = IntPtr.Zero;
-                cam_container.myApi.SVS_FeatureGetByName(currentCam.hRemoteDev, "ExposureTime", ref hFeature);
-                if (hFeature != IntPtr.Zero)
-                    cam_container.myApi.SVS_FeatureSetValueFloat(currentCam.hRemoteDev, hFeature, 30000.0);
-
                 // Start stream acquisition with 4 buffers
+                ResetFpsStats();
                 lock (csacquisition)
                 {
                     currentCam.StreamAcquisitionStart(4);
@@ -333,6 +356,7 @@ namespace SVCamApi
                 {
                     currentCam.StreamAcquisitionStop();
                 }
+                currentCam.closeConnection();
             }
             finally
             {
@@ -342,8 +366,11 @@ namespace SVCamApi
 
             lblCamFound.Text = "SVS Camera Closed !!";
             m_bCameraOpened = false;
+            ResetFpsStats();
+            lblFrameId.Text = "0";
+            UpdateCameraParamLabels();
             UpdateUIControlsState();
-            lblModeTips.Text = "";
+            UpdateModeTips();
             m_nSWTriggerCount = 0;
         }
 
@@ -413,16 +440,56 @@ namespace SVCamApi
             btnSoftwareTriggerTimer.Text = $"{strAutoTriggerText}-{m_nAutoTriggerCount:D8}";
         }
 
+        private void timerFps_Tick(object sender, EventArgs e)
+        {
+            if (IsDisposed) return;
+
+            double fps = 0.0;
+            lock (m_fpsLock)
+            {
+                long nowTicks = Stopwatch.GetTimestamp();
+                if (m_lastFrameReceivedTicks > 0 && (nowTicks - m_lastFrameReceivedTicks) <= (long)(2.0 * Stopwatch.Frequency))
+                {
+                    fps = m_measuredFps;
+                }
+                else
+                {
+                    m_measuredFps = 0.0;
+                    fps = 0.0;
+                }
+            }
+
+            lblFps.Text = $"{fps:F1} fps";
+        }
+
+        private void ResetFpsStats()
+        {
+            lock (m_fpsLock)
+            {
+                m_fpsTimestamps.Clear();
+                m_measuredFps = 0.0;
+                m_lastFrameReceivedTicks = 0;
+            }
+            if (!IsDisposed && IsHandleCreated)
+            {
+                BeginInvoke(new Action(() =>
+                {
+                    if (!IsDisposed)
+                        lblFps.Text = "0.0 fps";
+                }));
+            }
+        }
+
         private void rbFreeRun_CheckedChanged(object sender, EventArgs e)
         {
             if (rbFreeRun.Checked)
             {
-                if (currentCam != null && currentCam.is_opened)
+                if (m_bCameraOpened && currentCam != null && currentCam.is_opened)
                 {
                     currentCam.SetTriggerMode(false);
                     lblCamFound.Text = "Switched to FreeRun Mode";
-                    UpdateModeTips();
                 }
+                UpdateModeTips();
                 UpdateUIControlsState();
             }
         }
@@ -431,13 +498,13 @@ namespace SVCamApi
         {
             if (rbSwTrigger.Checked)
             {
-                if (currentCam != null && currentCam.is_opened)
+                if (m_bCameraOpened && currentCam != null && currentCam.is_opened)
                 {
                     currentCam.SetTriggerMode(true);
                     currentCam.SetTriggerSource("Software");
                     lblCamFound.Text = "Switched to Software Trigger Mode";
-                    UpdateModeTips();
                 }
+                UpdateModeTips();
                 UpdateUIControlsState();
             }
         }
@@ -446,24 +513,29 @@ namespace SVCamApi
         {
             if (rbHwTrigger.Checked)
             {
-                if (currentCam != null && currentCam.is_opened)
+                if (m_bCameraOpened && currentCam != null && currentCam.is_opened)
                 {
                     currentCam.SetTriggerMode(true);
                     var ret = currentCam.SetTriggerSource("Line1");
                     if (ret != SVcamApi.SVSCamApiReturn.SV_ERROR_SUCCESS)
                         currentCam.SetTriggerSource("Line0");
                     lblCamFound.Text = "Switched to Hardware Trigger Mode";
-                    UpdateModeTips();
                 }
+                UpdateModeTips();
                 UpdateUIControlsState();
             }
         }
 
         private void UpdateModeTips()
         {
-            if (currentCam == null || !currentCam.is_opened)
+            if (currentCam == null || !currentCam.is_opened || !m_bCameraOpened)
             {
-                lblModeTips.Text = "";
+                if (rbFreeRun.Checked)
+                    lblModeTips.Text = "FreeRun selected. Click 'Open SVS Camera' to start.";
+                else if (rbHwTrigger.Checked)
+                    lblModeTips.Text = "Hardware Trigger selected. Click 'Open SVS Camera' to start.";
+                else
+                    lblModeTips.Text = "Software Trigger selected. Click 'Open SVS Camera' to start.";
                 return;
             }
 
@@ -486,6 +558,14 @@ namespace SVCamApi
             btnOpenSvsCamera.Enabled = !m_bCameraOpened;
             btnCloseSvsCamera.Enabled = m_bCameraOpened;
 
+            chkAOI.Enabled = true; // Always allow user to toggle ROI: 200*200 before or after opening camera
+            chkAutoSave.Enabled = false;
+            chkAutoSave.Checked = false;
+            cmbWhiteBalance.Enabled = false;
+            lblAutoWhiteBalance.Enabled = false;
+            cmbPivMode.Enabled = false;
+            lblPivMode.Enabled = false;
+
             bool bEnableSwTrigger = m_bCameraOpened && rbSwTrigger.Checked;
             btnSoftwareTrigger.Enabled = bEnableSwTrigger;
             btnSoftwareTriggerTimer.Enabled = bEnableSwTrigger;
@@ -501,7 +581,9 @@ namespace SVCamApi
 
         private void chkAOI_CheckedChanged(object sender, EventArgs e)
         {
-            if (currentCam == null)
+            // If camera is not opened yet, user can freely check/uncheck ROI: 200*200.
+            // It will be applied when 'Open SVS Camera' is clicked.
+            if (!m_bCameraOpened || currentCam == null || !currentCam.is_opened)
                 return;
 
             isStoping = true;
@@ -513,22 +595,40 @@ namespace SVCamApi
                     currentCam.StreamAcquisitionStop();
                     if (chkAOI.Checked)
                     {
-                        var ret = currentCam.setAreaOfInterest(200, 200, 0, 0);
+                        var ret = currentCam.SetCameraROI(200, 200, center: true);
                         if (ret != SVcamApi.SVSCamApiReturn.SV_ERROR_SUCCESS)
+                        {
+                            chkAOI.CheckedChanged -= chkAOI_CheckedChanged;
                             chkAOI.Checked = false;
+                            chkAOI.CheckedChanged += chkAOI_CheckedChanged;
+                        }
                     }
                     else
                     {
-                        var ret = currentCam.setAreaOfInterest(currentCam.CamWidth, currentCam.CamHeight, 0, 0);
+                        long sensorW = currentCam.SensorWidth > 0 ? currentCam.SensorWidth : currentCam.CamWidth;
+                        long sensorH = currentCam.SensorHeight > 0 ? currentCam.SensorHeight : currentCam.CamHeight;
+                        if (sensorW <= 0 || sensorH <= 0)
+                        {
+                            currentCam.GetSensorDimensions(out sensorW, out sensorH);
+                        }
+                        var ret = currentCam.SetCameraROI(sensorW, sensorH, center: false);
                         if (ret != SVcamApi.SVSCamApiReturn.SV_ERROR_SUCCESS)
+                        {
+                            chkAOI.CheckedChanged -= chkAOI_CheckedChanged;
                             chkAOI.Checked = true;
+                            chkAOI.CheckedChanged += chkAOI_CheckedChanged;
+                        }
                     }
+
+                    // Restart stream acquisition so buffer payload matches new ROI size
                     currentCam.StreamAcquisitionStart(4);
+                    ResetFpsStats();
+                    UpdateCameraParamLabels();
                 }
-                chkAOI.Enabled = false;
             }
             finally
             {
+                chkAOI.Enabled = true;
                 isStoping = false;
                 Cursor = Cursors.Default;
             }
@@ -536,7 +636,40 @@ namespace SVCamApi
 
         private void chkAutoSave_CheckedChanged(object sender, EventArgs e)
         {
-            SaveImg = chkAutoSave.Checked;
+            SaveImg = false;
+            chkAutoSave.Checked = false;
+        }
+
+        private void UpdateCameraParamLabels()
+        {
+            if (!IsDisposed && IsHandleCreated)
+            {
+                BeginInvoke(new Action(() =>
+                {
+                    if (IsDisposed) return;
+                    if (currentCam != null && currentCam.is_opened)
+                    {
+                        currentCam.GetCameraExposureTime(out double expUs);
+                        currentCam.GetCameraPixelFormat(out string pixFmt);
+                        if (string.IsNullOrEmpty(pixFmt))
+                            pixFmt = "Mono8";
+
+                        currentCam.GetCameraROI(out long w, out long h, out long ox, out long oy);
+
+                        lblExposure.Text = expUs > 0 ? $"{expUs / 1000.0:F2} ms ({expUs:F0} us)" : "10.00 ms (10000 us)";
+                        lblPixelFormat.Text = pixFmt;
+                        lblResolution.Text = $"{w} x {h}";
+                        lblRoiOffset.Text = $"OffsetX: {ox}, OffsetY: {oy}";
+                    }
+                    else
+                    {
+                        lblExposure.Text = "-";
+                        lblPixelFormat.Text = "-";
+                        lblResolution.Text = "-";
+                        lblRoiOffset.Text = "-";
+                    }
+                }));
+            }
         }
 
         private void cmbWhiteBalance_SelectedIndexChanged(object sender, EventArgs e)
@@ -581,7 +714,6 @@ namespace SVCamApi
                 {
                     currentCam.StreamAcquisitionStart(4);
                 }
-                chkAOI.Enabled = false;
             }
             finally
             {
@@ -602,7 +734,6 @@ namespace SVCamApi
                 {
                     currentCam.StreamAcquisitionStop();
                 }
-                chkAOI.Enabled = true;
             }
             finally
             {
@@ -678,6 +809,29 @@ namespace SVCamApi
                 if (ret != SVcamApi.SVSCamApiReturn.SV_ERROR_SUCCESS || imageBytes == null)
                     continue;
 
+                // Record frame arrival timestamp for received FPS calculation
+                long nowTicks = Stopwatch.GetTimestamp();
+                lock (m_fpsLock)
+                {
+                    m_lastFrameReceivedTicks = nowTicks;
+                    m_fpsTimestamps.Enqueue(nowTicks);
+
+                    long windowTicks = (long)(1.5 * Stopwatch.Frequency);
+                    while (m_fpsTimestamps.Count > 2 && ((nowTicks - m_fpsTimestamps.Peek()) > windowTicks || m_fpsTimestamps.Count > 100))
+                    {
+                        m_fpsTimestamps.Dequeue();
+                    }
+
+                    if (m_fpsTimestamps.Count >= 2)
+                    {
+                        long durationTicks = nowTicks - m_fpsTimestamps.Peek();
+                        if (durationTicks > 0)
+                        {
+                            m_measuredFps = ((double)(m_fpsTimestamps.Count - 1) * Stopwatch.Frequency) / durationTicks;
+                        }
+                    }
+                }
+
                 // Update frame id label on UI
                 long imageId = (long)bufferInfo.iImageId;
                 if (!IsDisposed && IsHandleCreated)
@@ -689,22 +843,10 @@ namespace SVCamApi
                     }));
                 }
 
-                if (SaveImg)
+                // Background auto-save is disabled per user request; always update display
+                if (displayForm != null && !displayForm.IsDisposed)
                 {
-                    lock (save_lock)
-                    {
-                        if (save_queue.Count < save_img_buffer_count)
-                        {
-                            save_queue.Enqueue(Tuple.Create(bufferInfo, imageBytes));
-                        }
-                    }
-                }
-                else
-                {
-                    if (displayForm != null && !displayForm.IsDisposed)
-                    {
-                        displayForm.UpdateFrame(bufferInfo, imageBytes, cam_container.myApi);
-                    }
+                    displayForm.UpdateFrame(bufferInfo, imageBytes, cam_container.myApi);
                 }
             }
         }
@@ -908,6 +1050,8 @@ namespace SVCamApi
 
         private void MainForm_FormClosing(object sender, FormClosingEventArgs e)
         {
+            timerFps.Stop();
+
             if (m_bAutoTrigger)
             {
                 timer1fps.Stop();

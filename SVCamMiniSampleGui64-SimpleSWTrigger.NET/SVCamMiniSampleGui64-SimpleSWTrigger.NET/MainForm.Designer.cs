@@ -28,6 +28,16 @@ namespace SVCamApi
             this.cmbPivMode = new System.Windows.Forms.ComboBox();
             this.lblFrameIdPrompt = new System.Windows.Forms.Label();
             this.lblFrameId = new System.Windows.Forms.Label();
+            this.lblFpsPrompt = new System.Windows.Forms.Label();
+            this.lblFps = new System.Windows.Forms.Label();
+            this.lblExposurePrompt = new System.Windows.Forms.Label();
+            this.lblExposure = new System.Windows.Forms.Label();
+            this.lblPixelFormatPrompt = new System.Windows.Forms.Label();
+            this.lblPixelFormat = new System.Windows.Forms.Label();
+            this.lblResolutionPrompt = new System.Windows.Forms.Label();
+            this.lblResolution = new System.Windows.Forms.Label();
+            this.lblRoiOffsetPrompt = new System.Windows.Forms.Label();
+            this.lblRoiOffset = new System.Windows.Forms.Label();
             this.lblSavedPrompt = new System.Windows.Forms.Label();
             this.lblSavedFrame = new System.Windows.Forms.Label();
             this.btnStop = new System.Windows.Forms.Button();
@@ -46,6 +56,7 @@ namespace SVCamApi
             this.btnShowDisplay = new System.Windows.Forms.Button();
             this.btnQuit = new System.Windows.Forms.Button();
             this.timer1fps = new System.Windows.Forms.Timer(this.components);
+            this.timerFps = new System.Windows.Forms.Timer(this.components);
             this.grpTriggerMode.SuspendLayout();
             this.SuspendLayout();
             // 
@@ -91,15 +102,16 @@ namespace SVCamApi
             this.chkAOI.AutoSize = true;
             this.chkAOI.Location = new System.Drawing.Point(24, 135);
             this.chkAOI.Name = "chkAOI";
-            this.chkAOI.Size = new System.Drawing.Size(95, 17);
+            this.chkAOI.Size = new System.Drawing.Size(100, 17);
             this.chkAOI.TabIndex = 4;
-            this.chkAOI.Text = "AOI 200* 200";
+            this.chkAOI.Text = "ROI: 200*200";
             this.chkAOI.UseVisualStyleBackColor = true;
             this.chkAOI.CheckedChanged += new System.EventHandler(this.chkAOI_CheckedChanged);
             // 
             // chkAutoSave
             // 
             this.chkAutoSave.AutoSize = true;
+            this.chkAutoSave.Enabled = false;
             this.chkAutoSave.Location = new System.Drawing.Point(170, 135);
             this.chkAutoSave.Name = "chkAutoSave";
             this.chkAutoSave.Size = new System.Drawing.Size(81, 17);
@@ -111,6 +123,7 @@ namespace SVCamApi
             // lblAutoWhiteBalance
             // 
             this.lblAutoWhiteBalance.AutoSize = true;
+            this.lblAutoWhiteBalance.Enabled = false;
             this.lblAutoWhiteBalance.Location = new System.Drawing.Point(24, 175);
             this.lblAutoWhiteBalance.Name = "lblAutoWhiteBalance";
             this.lblAutoWhiteBalance.Size = new System.Drawing.Size(95, 13);
@@ -120,6 +133,7 @@ namespace SVCamApi
             // cmbWhiteBalance
             // 
             this.cmbWhiteBalance.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+            this.cmbWhiteBalance.Enabled = false;
             this.cmbWhiteBalance.FormattingEnabled = true;
             this.cmbWhiteBalance.Items.AddRange(new object[] {
             "Reset",
@@ -135,6 +149,7 @@ namespace SVCamApi
             // lblPivMode
             // 
             this.lblPivMode.AutoSize = true;
+            this.lblPivMode.Enabled = false;
             this.lblPivMode.Location = new System.Drawing.Point(170, 175);
             this.lblPivMode.Name = "lblPivMode";
             this.lblPivMode.Size = new System.Drawing.Size(53, 13);
@@ -144,6 +159,7 @@ namespace SVCamApi
             // cmbPivMode
             // 
             this.cmbPivMode.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+            this.cmbPivMode.Enabled = false;
             this.cmbPivMode.FormattingEnabled = true;
             this.cmbPivMode.Items.AddRange(new object[] {
             "Off",
@@ -168,25 +184,118 @@ namespace SVCamApi
             this.lblFrameId.AutoSize = true;
             this.lblFrameId.Location = new System.Drawing.Point(95, 255);
             this.lblFrameId.Name = "lblFrameId";
-            this.lblFrameId.Size = new System.Drawing.Size(0, 13);
+            this.lblFrameId.Size = new System.Drawing.Size(13, 13);
             this.lblFrameId.TabIndex = 11;
+            this.lblFrameId.Text = "0";
+            // 
+            // lblFpsPrompt
+            // 
+            this.lblFpsPrompt.AutoSize = true;
+            this.lblFpsPrompt.Location = new System.Drawing.Point(170, 255);
+            this.lblFpsPrompt.Name = "lblFpsPrompt";
+            this.lblFpsPrompt.Size = new System.Drawing.Size(29, 13);
+            this.lblFpsPrompt.TabIndex = 26;
+            this.lblFpsPrompt.Text = "FPS:";
+            // 
+            // lblFps
+            // 
+            this.lblFps.AutoSize = true;
+            this.lblFps.Location = new System.Drawing.Point(205, 255);
+            this.lblFps.Name = "lblFps";
+            this.lblFps.Size = new System.Drawing.Size(43, 13);
+            this.lblFps.TabIndex = 27;
+            this.lblFps.Text = "0.0 fps";
+            // 
+            // lblExposurePrompt
+            // 
+            this.lblExposurePrompt.AutoSize = true;
+            this.lblExposurePrompt.Location = new System.Drawing.Point(24, 280);
+            this.lblExposurePrompt.Name = "lblExposurePrompt";
+            this.lblExposurePrompt.Size = new System.Drawing.Size(54, 13);
+            this.lblExposurePrompt.TabIndex = 28;
+            this.lblExposurePrompt.Text = "Exposure:";
+            // 
+            // lblExposure
+            // 
+            this.lblExposure.AutoSize = true;
+            this.lblExposure.Location = new System.Drawing.Point(105, 280);
+            this.lblExposure.Name = "lblExposure";
+            this.lblExposure.Size = new System.Drawing.Size(10, 13);
+            this.lblExposure.TabIndex = 29;
+            this.lblExposure.Text = "-";
+            // 
+            // lblPixelFormatPrompt
+            // 
+            this.lblPixelFormatPrompt.AutoSize = true;
+            this.lblPixelFormatPrompt.Location = new System.Drawing.Point(24, 305);
+            this.lblPixelFormatPrompt.Name = "lblPixelFormatPrompt";
+            this.lblPixelFormatPrompt.Size = new System.Drawing.Size(67, 13);
+            this.lblPixelFormatPrompt.TabIndex = 30;
+            this.lblPixelFormatPrompt.Text = "Pixel Format:";
+            // 
+            // lblPixelFormat
+            // 
+            this.lblPixelFormat.AutoSize = true;
+            this.lblPixelFormat.Location = new System.Drawing.Point(105, 305);
+            this.lblPixelFormat.Name = "lblPixelFormat";
+            this.lblPixelFormat.Size = new System.Drawing.Size(10, 13);
+            this.lblPixelFormat.TabIndex = 31;
+            this.lblPixelFormat.Text = "-";
+            // 
+            // lblResolutionPrompt
+            // 
+            this.lblResolutionPrompt.AutoSize = true;
+            this.lblResolutionPrompt.Location = new System.Drawing.Point(24, 330);
+            this.lblResolutionPrompt.Name = "lblResolutionPrompt";
+            this.lblResolutionPrompt.Size = new System.Drawing.Size(60, 13);
+            this.lblResolutionPrompt.TabIndex = 32;
+            this.lblResolutionPrompt.Text = "Resolution:";
+            // 
+            // lblResolution
+            // 
+            this.lblResolution.AutoSize = true;
+            this.lblResolution.Location = new System.Drawing.Point(105, 330);
+            this.lblResolution.Name = "lblResolution";
+            this.lblResolution.Size = new System.Drawing.Size(10, 13);
+            this.lblResolution.TabIndex = 33;
+            this.lblResolution.Text = "-";
+            // 
+            // lblRoiOffsetPrompt
+            // 
+            this.lblRoiOffsetPrompt.AutoSize = true;
+            this.lblRoiOffsetPrompt.Location = new System.Drawing.Point(24, 355);
+            this.lblRoiOffsetPrompt.Name = "lblRoiOffsetPrompt";
+            this.lblRoiOffsetPrompt.Size = new System.Drawing.Size(62, 13);
+            this.lblRoiOffsetPrompt.TabIndex = 34;
+            this.lblRoiOffsetPrompt.Text = "ROI Offset:";
+            // 
+            // lblRoiOffset
+            // 
+            this.lblRoiOffset.AutoSize = true;
+            this.lblRoiOffset.Location = new System.Drawing.Point(105, 355);
+            this.lblRoiOffset.Name = "lblRoiOffset";
+            this.lblRoiOffset.Size = new System.Drawing.Size(10, 13);
+            this.lblRoiOffset.TabIndex = 35;
+            this.lblRoiOffset.Text = "-";
             // 
             // lblSavedPrompt
             // 
             this.lblSavedPrompt.AutoSize = true;
-            this.lblSavedPrompt.Location = new System.Drawing.Point(24, 280);
+            this.lblSavedPrompt.Location = new System.Drawing.Point(24, 380);
             this.lblSavedPrompt.Name = "lblSavedPrompt";
             this.lblSavedPrompt.Size = new System.Drawing.Size(41, 13);
             this.lblSavedPrompt.TabIndex = 12;
             this.lblSavedPrompt.Text = "Saved:";
+            this.lblSavedPrompt.Visible = false;
             // 
             // lblSavedFrame
             // 
             this.lblSavedFrame.AutoSize = true;
-            this.lblSavedFrame.Location = new System.Drawing.Point(95, 280);
+            this.lblSavedFrame.Location = new System.Drawing.Point(105, 380);
             this.lblSavedFrame.Name = "lblSavedFrame";
             this.lblSavedFrame.Size = new System.Drawing.Size(0, 13);
             this.lblSavedFrame.TabIndex = 13;
+            this.lblSavedFrame.Visible = false;
             // 
             // btnStop
             // 
@@ -350,6 +459,11 @@ namespace SVCamApi
             this.timer1fps.Interval = 1000;
             this.timer1fps.Tick += new System.EventHandler(this.timer1fps_Tick);
             // 
+            // timerFps
+            // 
+            this.timerFps.Interval = 250;
+            this.timerFps.Tick += new System.EventHandler(this.timerFps_Tick);
+            // 
             // MainForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
@@ -369,6 +483,16 @@ namespace SVCamApi
             this.Controls.Add(this.btnStop);
             this.Controls.Add(this.lblSavedFrame);
             this.Controls.Add(this.lblSavedPrompt);
+            this.Controls.Add(this.lblRoiOffset);
+            this.Controls.Add(this.lblRoiOffsetPrompt);
+            this.Controls.Add(this.lblResolution);
+            this.Controls.Add(this.lblResolutionPrompt);
+            this.Controls.Add(this.lblPixelFormat);
+            this.Controls.Add(this.lblPixelFormatPrompt);
+            this.Controls.Add(this.lblExposure);
+            this.Controls.Add(this.lblExposurePrompt);
+            this.Controls.Add(this.lblFps);
+            this.Controls.Add(this.lblFpsPrompt);
             this.Controls.Add(this.lblFrameId);
             this.Controls.Add(this.lblFrameIdPrompt);
             this.Controls.Add(this.cmbPivMode);
@@ -407,6 +531,16 @@ namespace SVCamApi
         private System.Windows.Forms.ComboBox cmbPivMode;
         private System.Windows.Forms.Label lblFrameIdPrompt;
         private System.Windows.Forms.Label lblFrameId;
+        private System.Windows.Forms.Label lblFpsPrompt;
+        private System.Windows.Forms.Label lblFps;
+        private System.Windows.Forms.Label lblExposurePrompt;
+        private System.Windows.Forms.Label lblExposure;
+        private System.Windows.Forms.Label lblPixelFormatPrompt;
+        private System.Windows.Forms.Label lblPixelFormat;
+        private System.Windows.Forms.Label lblResolutionPrompt;
+        private System.Windows.Forms.Label lblResolution;
+        private System.Windows.Forms.Label lblRoiOffsetPrompt;
+        private System.Windows.Forms.Label lblRoiOffset;
         private System.Windows.Forms.Label lblSavedPrompt;
         private System.Windows.Forms.Label lblSavedFrame;
         private System.Windows.Forms.Button btnStop;
@@ -425,5 +559,6 @@ namespace SVCamApi
         private System.Windows.Forms.Button btnShowDisplay;
         private System.Windows.Forms.Button btnQuit;
         private System.Windows.Forms.Timer timer1fps;
+        private System.Windows.Forms.Timer timerFps;
     }
 }

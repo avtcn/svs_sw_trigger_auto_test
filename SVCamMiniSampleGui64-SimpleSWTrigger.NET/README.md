@@ -21,11 +21,35 @@ This project provides feature-for-feature parity with the C++ MFC version `SVCam
 - **Continuous Auto-Save**:
   - Checkbox `"Auto Save "` queues streaming frames to background worker thread.
   - Saves continuous frames to `Image/<displayName><iImageId>_<iTimeStamp>_.png`.
-- **AOI (Area of Interest)**:
-  - Toggle between 200x200 AOI and full sensor resolution.
-- **White Balance & PIV Mode**:
-  - White balance options: Reset, Continuous, Once, Off.
-  - PIV Mode: Off, On.
+- **Real-Time Received FPS, Frame ID & Parameter Display**:
+  - Displays real-time frame ID alongside actual measured frame rate received by the application (`Frame ID: xxxx  FPS: yyy fps`).
+  - Displays current camera parameters directly below the Frame ID part:
+    - `Exposure:` e.g. `10.00 ms (10000 us)`
+    - `Pixel Format:` e.g. `Mono8`
+    - `Resolution:` e.g. `200 x 200`
+    - `ROI Offset:` e.g. `OffsetX: 1948, OffsetY: 1400`
+  - Live display window title updates dynamically with resolution and frame ID (`Display - <width>x<height> (Frame: <id>)`).
+  - Uses high-resolution sliding-window timestamp measurement with automatic stall detection.
+- **Pixel Format & Exposure Configuration (Ported from `SVCamMiniSample64-ROI-Exp-Mono8`)**:
+  - Automatically sets image format to `Mono8` via `SetCameraPixelFormat("Mono8")` before acquisition start.
+  - Automatically sets exposure time to 10 ms (`10000.0` µs) via `SetCameraExposureTime(10000.0)`.
+  - Ensures manual exposure mode (`ExposureAuto = Off`, `ExposureMode = Timed`).
+  - Supports feature fallback order: `ExposureTime` -> `ExposureTimeAbs` (SFNC 1.x) -> `ExposureTime_us`.
+- **ROI (Region of Interest - Centered 200x200, Ported from `SVCamMiniSample64-ROI-Exp-Mono8`)**:
+  - Renamed from AOI to `ROI: 200*200` in the GUI.
+  - Centered within the full sensor dimensions:
+    - Queries sensor limits (`WidthMax` / `SensorWidth`) and feature increments (`widthInc`, `heightInc`, `offsetXInc`, `offsetYInc`).
+    - Snaps width and height to increments and calculates centered offsets: `OffsetX = ((sensorWidth - roiWidth) / 2 / offsetXInc) * offsetXInc`, `OffsetY = ((sensorHeight - roiHeight) / 2 / offsetYInc) * offsetYInc`.
+    - Coordinates sequence: resets `OffsetX = 0, OffsetY = 0` first, sets `Width/Height`, then sets centered `OffsetX/OffsetY`.
+  - Can be toggled on/off **both before opening the camera and dynamically while streaming**:
+    - Pre-open toggle: checking before clicking "Open SVS Camera" opens the camera directly into centered 200x200 ROI.
+    - Dynamic toggle: toggling while streaming seamlessly stops acquisition, sets ROI, and restarts with matching buffer sizes.
+- **Explicit Camera Open Control**:
+  - Selecting FreeRun mode or selecting a camera does **not** automatically open the camera or start acquisition.
+  - Camera connection and streaming only begin when the user explicitly clicks the `"Open SVS Camera"` button.
+- **Auto-Save & Auxiliary Controls**:
+  - `Auto Save` checkbox and background continuous saving thread are disabled.
+  - `AutoWhitebalance` and `PIV Mode` controls are disabled.
 
 ## Architecture & Code Mapping
 
