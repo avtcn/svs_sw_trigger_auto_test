@@ -17,10 +17,11 @@ Implement modes switching among:
 
 ## Modification
 Original example: `SVCamMiniSampleGui64`  
-Modified example: `SVCamMiniSampleGui64-SimpleSWTrigger`  
+Modified example (C++ MFC): `SVCamMiniSampleGui64-SimpleSWTrigger`  
+Modified example (C# .NET): `SVCamMiniSampleGui64-SimpleSWTrigger.NET`  
 ![](files-compare.png)
 
 
 ## Histroy
 1. 2026/11/02, Manta G895 Passed;
-
+2. 2026/11/04, Added C# clone `SVCamMiniSampleGui64-SimpleSWTrigger.NET` based on SVS .NET/C# SDK;
