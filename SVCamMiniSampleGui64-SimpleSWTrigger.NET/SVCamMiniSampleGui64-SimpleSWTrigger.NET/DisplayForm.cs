@@ -133,15 +133,21 @@ namespace SVCamApi
                     }
 
                     if (oldBmp != null)
-                        oldBmp.Dispose();
+                    {
+                        try { oldBmp.Dispose(); } catch { }
+                    }
 
                     if (!IsDisposed && IsHandleCreated)
                     {
                         BeginInvoke(new Action(() =>
                         {
-                            if (IsDisposed) return;
-                            Text = $"Display - {width}x{height} (Frame: {info.iImageId})";
-                            Invalidate();
+                            try
+                            {
+                                if (IsDisposed) return;
+                                Text = $"Display - {width}x{height} (Frame: {info.iImageId})";
+                                Invalidate();
+                            }
+                            catch { }
                         }));
                     }
                     else
@@ -162,21 +168,28 @@ namespace SVCamApi
 
         private Bitmap Create8bppBitmap(int width, int height, byte[] pixelData)
         {
+            if (width <= 0 || height <= 0 || pixelData == null || pixelData.Length == 0)
+                return null;
+
             Bitmap bmp = new Bitmap(width, height, PixelFormat.Format8bppIndexed);
             bmp.Palette = s_grayPalette;
             BitmapData bd = bmp.LockBits(new Rectangle(0, 0, width, height), ImageLockMode.WriteOnly, PixelFormat.Format8bppIndexed);
             try
             {
+                int copyLen = Math.Min(pixelData.Length, width * height);
                 if (bd.Stride == width)
                 {
-                    Marshal.Copy(pixelData, 0, bd.Scan0, width * height);
+                    Marshal.Copy(pixelData, 0, bd.Scan0, copyLen);
                 }
                 else
                 {
                     for (int y = 0; y < height; y++)
                     {
+                        int srcOffset = y * width;
+                        if (srcOffset + width > pixelData.Length)
+                            break;
                         IntPtr destRow = new IntPtr(bd.Scan0.ToInt64() + y * bd.Stride);
-                        Marshal.Copy(pixelData, y * width, destRow, width);
+                        Marshal.Copy(pixelData, srcOffset, destRow, width);
                     }
                 }
             }
@@ -193,49 +206,47 @@ namespace SVCamApi
             {
                 e.Graphics.Clear(Color.Black);
 
-                Bitmap bmpToDraw = null;
                 lock (m_lockBitmap)
                 {
                     if (m_currentBitmap != null)
                     {
-                        bmpToDraw = m_currentBitmap;
+                        double canvasW = ClientSize.Width;
+                        double canvasH = ClientSize.Height;
+                        if (canvasW > 0 && canvasH > 0)
+                        {
+                            double imgW = m_currentBitmap.Width;
+                            double imgH = m_currentBitmap.Height;
+
+                            double scaleX = canvasW / imgW;
+                            double scaleY = canvasH / imgH;
+
+                            double dstW, dstH, dstX, dstY;
+
+                            if (scaleX < scaleY)
+                            {
+                                dstW = canvasW;
+                                dstH = imgH * scaleX;
+                                dstX = 0;
+                                dstY = (canvasH - dstH) / 2.0;
+                            }
+                            else
+                            {
+                                dstW = imgW * scaleY;
+                                dstH = canvasH;
+                                dstX = (canvasW - dstW) / 2.0;
+                                dstY = 0;
+                            }
+
+                            Rectangle dstRect = new Rectangle((int)dstX, (int)dstY, (int)dstW, (int)dstH);
+                            e.Graphics.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.NearestNeighbor;
+                            e.Graphics.DrawImage(m_currentBitmap, dstRect, 0, 0, m_currentBitmap.Width, m_currentBitmap.Height, GraphicsUnit.Pixel);
+                        }
                     }
                 }
-
-                if (bmpToDraw != null)
-                {
-                    double canvasW = ClientSize.Width;
-                    double canvasH = ClientSize.Height;
-                    if (canvasW > 0 && canvasH > 0)
-                    {
-                        double imgW = bmpToDraw.Width;
-                        double imgH = bmpToDraw.Height;
-
-                        double scaleX = canvasW / imgW;
-                        double scaleY = canvasH / imgH;
-
-                        double dstW, dstH, dstX, dstY;
-
-                        if (scaleX < scaleY)
-                        {
-                            dstW = canvasW;
-                            dstH = imgH * scaleX;
-                            dstX = 0;
-                            dstY = (canvasH - dstH) / 2.0;
-                        }
-                        else
-                        {
-                            dstW = imgW * scaleY;
-                            dstH = canvasH;
-                            dstX = (canvasW - dstW) / 2.0;
-                            dstY = 0;
-                        }
-
-                        Rectangle dstRect = new Rectangle((int)dstX, (int)dstY, (int)dstW, (int)dstH);
-                        e.Graphics.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.NearestNeighbor;
-                        e.Graphics.DrawImage(bmpToDraw, dstRect, 0, 0, bmpToDraw.Width, bmpToDraw.Height, GraphicsUnit.Pixel);
-                    }
-                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"DisplayForm OnPaint exception: {ex.Message}");
             }
             finally
             {

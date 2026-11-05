@@ -401,9 +401,24 @@ namespace SVCamApi
             {
                 if (currentCam.GetSoftwareTriggerResult(out var newbufferInfo, out var newBufferData))
                 {
-                    Directory.CreateDirectory("Image");
-                    string filename = Path.Combine("Image", $"{currentCam.DisplayName}_{newbufferInfo.iImageId:D8}_{newbufferInfo.iTimeStamp}.bmp");
-                    SaveBufferToBmp(newbufferInfo, newBufferData, filename);
+                    // Only save image if auto save is explicitly enabled or manual single-shot trigger
+                    if (chkAutoSave.Checked || (!m_bAutoTrigger && sender == btnSoftwareTrigger))
+                    {
+                        try
+                        {
+                            string imageDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Image");
+                            if (!Directory.Exists(imageDir))
+                                Directory.CreateDirectory(imageDir);
+
+                            string safeDisplayName = SanitizeFileName(currentCam.DisplayName);
+                            string filename = Path.Combine(imageDir, $"{safeDisplayName}_{newbufferInfo.iImageId:D8}_{newbufferInfo.iTimeStamp}.bmp");
+                            SaveBufferToBmp(newbufferInfo, newBufferData, filename);
+                        }
+                        catch (Exception ex)
+                        {
+                            Console.WriteLine($"SaveBufferToBmp error: {ex.Message}");
+                        }
+                    }
 
                     // Update display
                     if (displayForm != null && !displayForm.IsDisposed)
@@ -893,10 +908,32 @@ namespace SVCamApi
             }
         }
 
+        private static string SanitizeFileName(string name)
+        {
+            if (string.IsNullOrEmpty(name))
+                return "Camera";
+
+            char[] invalids = Path.GetInvalidFileNameChars();
+            char[] chars = name.ToCharArray();
+            for (int i = 0; i < chars.Length; i++)
+            {
+                if (Array.IndexOf(invalids, chars[i]) >= 0 || chars[i] == ':' || chars[i] == '/' || chars[i] == '\\')
+                    chars[i] = '_';
+            }
+            return new string(chars).Trim();
+        }
+
         private void SaveBufferToBmp(SVcamApi._SV_BUFFER_INFO info, byte[] data, string filepath)
         {
+            if (data == null || data.Length == 0 || info.iSizeX == IntPtr.Zero || info.iSizeY == IntPtr.Zero)
+                return;
+
             try
             {
+                string dir = Path.GetDirectoryName(filepath);
+                if (!string.IsNullOrEmpty(dir) && !Directory.Exists(dir))
+                    Directory.CreateDirectory(dir);
+
                 GCHandle pin = GCHandle.Alloc(data, GCHandleType.Pinned);
                 try
                 {
@@ -913,13 +950,27 @@ namespace SVCamApi
             catch { }
 
             // GDI+ Fallback
-            SaveBufferWithGdi(info, data, filepath, ImageFormat.Bmp);
+            try
+            {
+                SaveBufferWithGdi(info, data, filepath, ImageFormat.Bmp);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"SaveBufferWithGdi fallback error: {ex.Message}");
+            }
         }
 
         private void SaveBufferToPng(SVcamApi._SV_BUFFER_INFO info, byte[] data, string filepath)
         {
+            if (data == null || data.Length == 0 || info.iSizeX == IntPtr.Zero || info.iSizeY == IntPtr.Zero)
+                return;
+
             try
             {
+                string dir = Path.GetDirectoryName(filepath);
+                if (!string.IsNullOrEmpty(dir) && !Directory.Exists(dir))
+                    Directory.CreateDirectory(dir);
+
                 GCHandle pin = GCHandle.Alloc(data, GCHandleType.Pinned);
                 try
                 {
@@ -936,108 +987,135 @@ namespace SVCamApi
             catch { }
 
             // GDI+ Fallback
-            SaveBufferWithGdi(info, data, filepath, ImageFormat.Png);
+            try
+            {
+                SaveBufferWithGdi(info, data, filepath, ImageFormat.Png);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"SaveBufferWithGdi PNG fallback error: {ex.Message}");
+            }
         }
 
         private void SaveBufferWithGdi(SVcamApi._SV_BUFFER_INFO info, byte[] data, string filepath, ImageFormat format)
         {
-            int width = (int)info.iSizeX.ToInt64();
-            int height = (int)info.iSizeY.ToInt64();
-            if (width <= 0 || height <= 0 || data == null || data.Length == 0)
-                return;
-
-            bool isBayer = (info.iPixelType & (ulong)SVcamApi.DefineConstants.SV_GVSP_PIX_ID_MASK) >= 8;
-            ulong pixelOccupy = info.iPixelType & (ulong)SVcamApi.DefineConstants.SV_GVSP_PIX_EFFECTIVE_PIXELSIZE_MASK;
-
-            if (isBayer)
+            try
             {
-                byte[] rgb = new byte[width * height * 3];
-                GCHandle pin = GCHandle.Alloc(data, GCHandleType.Pinned);
-                try
-                {
-                    info.pImagePtr = pin.AddrOfPinnedObject();
-                    cam_container.myApi.SVS_UtilBufferBayerToRGB(info, ref rgb[0], rgb.Length);
-                }
-                finally
-                {
-                    pin.Free();
-                }
+                int width = (int)info.iSizeX.ToInt64();
+                int height = (int)info.iSizeY.ToInt64();
+                if (width <= 0 || height <= 0 || data == null || data.Length == 0)
+                    return;
 
-                using (Bitmap bmp = new Bitmap(width, height, PixelFormat.Format24bppRgb))
+                string dir = Path.GetDirectoryName(filepath);
+                if (!string.IsNullOrEmpty(dir) && !Directory.Exists(dir))
+                    Directory.CreateDirectory(dir);
+
+                bool isBayer = (info.iPixelType & (ulong)SVcamApi.DefineConstants.SV_GVSP_PIX_ID_MASK) >= 8;
+                ulong pixelOccupy = info.iPixelType & (ulong)SVcamApi.DefineConstants.SV_GVSP_PIX_EFFECTIVE_PIXELSIZE_MASK;
+
+                if (isBayer)
                 {
-                    BitmapData bd = bmp.LockBits(new Rectangle(0, 0, width, height), ImageLockMode.WriteOnly, PixelFormat.Format24bppRgb);
+                    byte[] rgb = new byte[width * height * 3];
+                    GCHandle pin = GCHandle.Alloc(data, GCHandleType.Pinned);
                     try
                     {
-                        int rowBytes = width * 3;
-                        if (bd.Stride == rowBytes)
-                        {
-                            Marshal.Copy(rgb, 0, bd.Scan0, rgb.Length);
-                        }
-                        else
-                        {
-                            for (int y = 0; y < height; y++)
-                            {
-                                IntPtr destRow = new IntPtr(bd.Scan0.ToInt64() + y * bd.Stride);
-                                Marshal.Copy(rgb, y * rowBytes, destRow, rowBytes);
-                            }
-                        }
+                        info.pImagePtr = pin.AddrOfPinnedObject();
+                        cam_container.myApi.SVS_UtilBufferBayerToRGB(info, ref rgb[0], rgb.Length);
                     }
                     finally
                     {
-                        bmp.UnlockBits(bd);
+                        pin.Free();
                     }
-                    bmp.Save(filepath, format);
-                }
-            }
-            else if (pixelOccupy == (ulong)SVcamApi.DefineConstants.SV_GVSP_PIX_OCCUPY12BIT ||
-                     pixelOccupy == (ulong)SVcamApi.DefineConstants.SV_GVSP_PIX_OCCUPY16BIT)
-            {
-                byte[] mono = new byte[width * height];
-                GCHandle pin = GCHandle.Alloc(data, GCHandleType.Pinned);
-                try
-                {
-                    info.pImagePtr = pin.AddrOfPinnedObject();
-                    if (pixelOccupy == (ulong)SVcamApi.DefineConstants.SV_GVSP_PIX_OCCUPY12BIT)
-                        cam_container.myApi.SVS_UtilBuffer12BitTo8Bit(info, ref mono[0], mono.Length);
-                    else
-                        cam_container.myApi.SVS_UtilBuffer16BitTo8Bit(info, ref mono[0], mono.Length);
-                }
-                finally
-                {
-                    pin.Free();
-                }
 
-                using (Bitmap bmp = Create8bppBitmap(width, height, mono))
+                    using (Bitmap bmp = new Bitmap(width, height, PixelFormat.Format24bppRgb))
+                    {
+                        BitmapData bd = bmp.LockBits(new Rectangle(0, 0, width, height), ImageLockMode.WriteOnly, PixelFormat.Format24bppRgb);
+                        try
+                        {
+                            int rowBytes = width * 3;
+                            if (bd.Stride == rowBytes)
+                            {
+                                Marshal.Copy(rgb, 0, bd.Scan0, rgb.Length);
+                            }
+                            else
+                            {
+                                for (int y = 0; y < height; y++)
+                                {
+                                    IntPtr destRow = new IntPtr(bd.Scan0.ToInt64() + y * bd.Stride);
+                                    Marshal.Copy(rgb, y * rowBytes, destRow, rowBytes);
+                                }
+                            }
+                        }
+                        finally
+                        {
+                            bmp.UnlockBits(bd);
+                        }
+                        bmp.Save(filepath, format);
+                    }
+                }
+                else if (pixelOccupy == (ulong)SVcamApi.DefineConstants.SV_GVSP_PIX_OCCUPY12BIT ||
+                         pixelOccupy == (ulong)SVcamApi.DefineConstants.SV_GVSP_PIX_OCCUPY16BIT)
                 {
-                    bmp.Save(filepath, format);
+                    byte[] mono = new byte[width * height];
+                    GCHandle pin = GCHandle.Alloc(data, GCHandleType.Pinned);
+                    try
+                    {
+                        info.pImagePtr = pin.AddrOfPinnedObject();
+                        if (pixelOccupy == (ulong)SVcamApi.DefineConstants.SV_GVSP_PIX_OCCUPY12BIT)
+                            cam_container.myApi.SVS_UtilBuffer12BitTo8Bit(info, ref mono[0], mono.Length);
+                        else
+                            cam_container.myApi.SVS_UtilBuffer16BitTo8Bit(info, ref mono[0], mono.Length);
+                    }
+                    finally
+                    {
+                        pin.Free();
+                    }
+
+                    using (Bitmap bmp = Create8bppBitmap(width, height, mono))
+                    {
+                        if (bmp != null)
+                            bmp.Save(filepath, format);
+                    }
+                }
+                else
+                {
+                    using (Bitmap bmp = Create8bppBitmap(width, height, data))
+                    {
+                        if (bmp != null)
+                            bmp.Save(filepath, format);
+                    }
                 }
             }
-            else
+            catch (Exception ex)
             {
-                using (Bitmap bmp = Create8bppBitmap(width, height, data))
-                {
-                    bmp.Save(filepath, format);
-                }
+                Console.WriteLine($"SaveBufferWithGdi error: {ex.Message}");
             }
         }
 
         private Bitmap Create8bppBitmap(int width, int height, byte[] pixelData)
         {
+            if (width <= 0 || height <= 0 || pixelData == null || pixelData.Length == 0)
+                return null;
+
             Bitmap bmp = new Bitmap(width, height, PixelFormat.Format8bppIndexed);
             bmp.Palette = s_grayPalette;
             BitmapData bd = bmp.LockBits(new Rectangle(0, 0, width, height), ImageLockMode.WriteOnly, PixelFormat.Format8bppIndexed);
             try
             {
+                int copyLen = Math.Min(pixelData.Length, width * height);
                 if (bd.Stride == width)
                 {
-                    Marshal.Copy(pixelData, 0, bd.Scan0, width * height);
+                    Marshal.Copy(pixelData, 0, bd.Scan0, copyLen);
                 }
                 else
                 {
                     for (int y = 0; y < height; y++)
                     {
+                        int srcOffset = y * width;
+                        if (srcOffset + width > pixelData.Length)
+                            break;
                         IntPtr destRow = new IntPtr(bd.Scan0.ToInt64() + y * bd.Stride);
-                        Marshal.Copy(pixelData, y * width, destRow, width);
+                        Marshal.Copy(pixelData, srcOffset, destRow, width);
                     }
                 }
             }
