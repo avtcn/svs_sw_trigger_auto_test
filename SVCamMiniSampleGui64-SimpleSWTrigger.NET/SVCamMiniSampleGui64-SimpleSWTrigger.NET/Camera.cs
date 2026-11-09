@@ -811,6 +811,146 @@ namespace SVCamApi
 
         public SVcamApi.SVSCamApiReturn GetExposureTime(out double exposureTimeUs) => GetCameraExposureTime(out exposureTimeUs);
 
+        /// <summary>
+        /// Configure camera binning (e.g. binningH = 2, binningV = 2 for 2x2 binning).
+        /// Must be called before streaming starts.
+        /// </summary>
+        public SVcamApi.SVSCamApiReturn SetCameraBinning(long binningH = 2, long binningV = 2, string binningMode = null)
+        {
+            if (hRemoteDev == IntPtr.Zero)
+                return SVcamApi.SVSCamApiReturn.SV_ERROR_UNKNOWN;
+
+            if (isStreaming)
+            {
+                Console.WriteLine("SetCameraBinning: Cannot change binning while streaming is active!");
+                return SVcamApi.SVSCamApiReturn.SV_ERROR_UNKNOWN;
+            }
+
+            // Reset offsets first to prevent range errors when boundaries shrink
+            IntPtr hOffset = IntPtr.Zero;
+            if (myApi.SVS_FeatureGetByName(hRemoteDev, "OffsetX", ref hOffset) == SVcamApi.SVSCamApiReturn.SV_ERROR_SUCCESS && hOffset != IntPtr.Zero)
+                myApi.SVS_FeatureSetValueInt64(hRemoteDev, hOffset, 0);
+
+            hOffset = IntPtr.Zero;
+            if (myApi.SVS_FeatureGetByName(hRemoteDev, "OffsetY", ref hOffset) == SVcamApi.SVSCamApiReturn.SV_ERROR_SUCCESS && hOffset != IntPtr.Zero)
+                myApi.SVS_FeatureSetValueInt64(hRemoteDev, hOffset, 0);
+
+            // 1. Set Horizontal Binning
+            IntPtr hBinH = IntPtr.Zero;
+            SVcamApi.SVSCamApiReturn retH = myApi.SVS_FeatureGetByName(hRemoteDev, "BinningHorizontal", ref hBinH);
+            if (retH == SVcamApi.SVSCamApiReturn.SV_ERROR_SUCCESS && hBinH != IntPtr.Zero)
+            {
+                var info = new SVcamApi._SV_FEATURE_INFO();
+                myApi.SVS_FeatureGetInfo(hRemoteDev, hBinH, ref info);
+
+                if ((SVcamApi.SV_FEATURE_TYPE)info.type == SVcamApi.SV_FEATURE_TYPE.SV_intfIEnumeration)
+                    myApi.SVS_FeatureSetValueEnum(hRemoteDev, hBinH, binningH.ToString());
+                else
+                    myApi.SVS_FeatureSetValueInt64(hRemoteDev, hBinH, binningH);
+
+                Console.WriteLine($"SetCameraBinning: BinningHorizontal set to {binningH}");
+            }
+            else
+            {
+                Console.WriteLine("SetCameraBinning: 'BinningHorizontal' feature not found or not supported.");
+            }
+
+            // 2. Set Vertical Binning
+            IntPtr hBinV = IntPtr.Zero;
+            SVcamApi.SVSCamApiReturn retV = myApi.SVS_FeatureGetByName(hRemoteDev, "BinningVertical", ref hBinV);
+            if (retV == SVcamApi.SVSCamApiReturn.SV_ERROR_SUCCESS && hBinV != IntPtr.Zero)
+            {
+                var info = new SVcamApi._SV_FEATURE_INFO();
+                myApi.SVS_FeatureGetInfo(hRemoteDev, hBinV, ref info);
+
+                if ((SVcamApi.SV_FEATURE_TYPE)info.type == SVcamApi.SV_FEATURE_TYPE.SV_intfIEnumeration)
+                    myApi.SVS_FeatureSetValueEnum(hRemoteDev, hBinV, binningV.ToString());
+                else
+                    myApi.SVS_FeatureSetValueInt64(hRemoteDev, hBinV, binningV);
+
+                Console.WriteLine($"SetCameraBinning: BinningVertical set to {binningV}");
+            }
+            else
+            {
+                Console.WriteLine("SetCameraBinning: 'BinningVertical' feature not found or not supported.");
+            }
+
+            // 3. Optional: Binning Mode ("Sum", "Average") if supported
+            if (!string.IsNullOrEmpty(binningMode))
+            {
+                string[] modeFeatures = { "BinningHorizontalMode", "BinningVerticalMode", "BinningMode" };
+                foreach (var modeFeat in modeFeatures)
+                {
+                    IntPtr hMode = IntPtr.Zero;
+                    if (myApi.SVS_FeatureGetByName(hRemoteDev, modeFeat, ref hMode) == SVcamApi.SVSCamApiReturn.SV_ERROR_SUCCESS && hMode != IntPtr.Zero)
+                    {
+                        myApi.SVS_FeatureSetValueEnum(hRemoteDev, hMode, binningMode);
+                    }
+                }
+            }
+
+            // 4. Refresh camera sensor / ROI dimensions for the new binned scale
+            GetSensorDimensions(out SensorWidth, out SensorHeight);
+            CamWidth = SensorWidth;
+            CamHeight = SensorHeight;
+            RoiOffsetX = 0;
+            RoiOffsetY = 0;
+
+            Console.WriteLine($"SetCameraBinning: Applied binning {binningH}x{binningV}, current resolution is now {CamWidth}x{CamHeight}");
+            return (retH == SVcamApi.SVSCamApiReturn.SV_ERROR_SUCCESS || retV == SVcamApi.SVSCamApiReturn.SV_ERROR_SUCCESS)
+                ? SVcamApi.SVSCamApiReturn.SV_ERROR_SUCCESS
+                : SVcamApi.SVSCamApiReturn.SV_ERROR_NOT_IMPLEMENTED;
+        }
+
+        public SVcamApi.SVSCamApiReturn GetCameraBinning(out long binningH, out long binningV)
+        {
+            binningH = 1;
+            binningV = 1;
+            if (hRemoteDev == IntPtr.Zero)
+                return SVcamApi.SVSCamApiReturn.SV_ERROR_UNKNOWN;
+
+            IntPtr hBinH = IntPtr.Zero;
+            if (myApi.SVS_FeatureGetByName(hRemoteDev, "BinningHorizontal", ref hBinH) == SVcamApi.SVSCamApiReturn.SV_ERROR_SUCCESS && hBinH != IntPtr.Zero)
+            {
+                var info = new SVcamApi._SV_FEATURE_INFO();
+                myApi.SVS_FeatureGetInfo(hRemoteDev, hBinH, ref info);
+                if ((SVcamApi.SV_FEATURE_TYPE)info.type == SVcamApi.SV_FEATURE_TYPE.SV_intfIEnumeration)
+                {
+                    string val = null;
+                    myApi.SVS_FeatureGetValueEnum(hRemoteDev, hBinH, ref val, (uint)SVcamApi.DefineConstants.SV_STRING_SIZE);
+                    long.TryParse(val, out binningH);
+                }
+                else
+                {
+                    myApi.SVS_FeatureGetValueInt64(hRemoteDev, hBinH, ref binningH);
+                }
+            }
+
+            IntPtr hBinV = IntPtr.Zero;
+            if (myApi.SVS_FeatureGetByName(hRemoteDev, "BinningVertical", ref hBinV) == SVcamApi.SVSCamApiReturn.SV_ERROR_SUCCESS && hBinV != IntPtr.Zero)
+            {
+                var info = new SVcamApi._SV_FEATURE_INFO();
+                myApi.SVS_FeatureGetInfo(hRemoteDev, hBinV, ref info);
+                if ((SVcamApi.SV_FEATURE_TYPE)info.type == SVcamApi.SV_FEATURE_TYPE.SV_intfIEnumeration)
+                {
+                    string val = null;
+                    myApi.SVS_FeatureGetValueEnum(hRemoteDev, hBinV, ref val, (uint)SVcamApi.DefineConstants.SV_STRING_SIZE);
+                    long.TryParse(val, out binningV);
+                }
+                else
+                {
+                    myApi.SVS_FeatureGetValueInt64(hRemoteDev, hBinV, ref binningV);
+                }
+            }
+
+            return SVcamApi.SVSCamApiReturn.SV_ERROR_SUCCESS;
+        }
+
+        public static SVcamApi.SVSCamApiReturn SetCameraBinning(Camera cam, long binningH, long binningV, string binningMode = null)
+        {
+            return cam != null ? cam.SetCameraBinning(binningH, binningV, binningMode) : SVcamApi.SVSCamApiReturn.SV_ERROR_UNKNOWN;
+        }
+
         // Interfaces to software trigger buffer copy
         public bool EnableSoftwareTriggerMode()
         {

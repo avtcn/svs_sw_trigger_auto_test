@@ -264,9 +264,11 @@ namespace SVCamApi
                 // Configure camera settings after opencamera operation (matching SVCamMiniSample64-ROI-Exp-Mono8):
                 // 1. Set image format to Mono8
                 // 2. Set exposure time to 10 ms (10000 us)
+                // 3. Set 2x2 Binning (BinningHorizontal = 2, BinningVertical = 2)
                 Console.WriteLine("\n--- Configure camera after opencamera operation ---");
                 currentCam.SetCameraPixelFormat("Mono8");
                 currentCam.SetCameraExposureTime(10000.0); // 10 ms = 10000 us
+                currentCam.SetCameraBinning(2, 2); // 2x2 binning
                 Console.WriteLine("----------------------------------------------------\n");
 
                 // 3. Configure ROI: 200*200 centered on sensor if checked, else full sensor
