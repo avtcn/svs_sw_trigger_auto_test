@@ -353,3 +353,12 @@ MigrationBackup/
 # Auto-generated git version header
 version_git.h
 version_git.h.tmp
+
+# Backup folders and archives
+*.zip
+*.7z
+*.rar
+*.tar.gz
+*NET.[0-9]*/
+*NET.*[0-9]/
+
